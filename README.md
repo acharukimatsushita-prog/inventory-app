@@ -1,16 +1,18 @@
-# React + Vite
+# inventory-app
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+在庫を管理するためのアプリです。
 
-Currently, two official plugins are available:
+商品や在庫データを扱い、必要な情報を確認・管理できます。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 使っている技術
 
-## React Compiler
+- React
+- Vite
+- JavaScript
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 起動方法
 
-## Expanding the ESLint configuration
+最初に必要なものをインストールします。
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```powershell
+npm install
