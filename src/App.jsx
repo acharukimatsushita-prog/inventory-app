@@ -1250,7 +1250,11 @@ function SettingsModal({ initialUrl, onClose, onSave }) {
 }
 
 function TransactionModal({ item, initialType, lastTransaction, isFromScanner, onClose, onConfirm }) {
-  const [amount, setAmount] = useState(lastTransaction?.amount || 1);
+  const orderUnitAmount = Number(item.orderQuantity || 1);
+  const defaultAmount = !isFromScanner
+    ? (initialType === 'out' ? 1 : orderUnitAmount)
+    : (lastTransaction?.amount || 1);
+  const [amount, setAmount] = useState(defaultAmount);
   const [type, setType] = useState(initialType || 'out');
   const formRef = useRef(null);
   const isOut = type === 'out';
@@ -1281,12 +1285,18 @@ function TransactionModal({ item, initialType, lastTransaction, isFromScanner, o
             <button
               type="button"
               style={{ padding: '6px 16px', border: 'none', borderRadius: '6px', background: isOut ? 'var(--danger-color)' : 'transparent', color: isOut ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: isOut ? 'bold' : 'normal', transition: 'all 0.2s' }}
-              onClick={() => setType('out')}
+              onClick={() => {
+                setType('out');
+                if (!isFromScanner) setAmount(1);
+              }}
             >出庫</button>
             <button
               type="button"
               style={{ padding: '6px 16px', border: 'none', borderRadius: '6px', background: !isOut ? 'var(--success-color)' : 'transparent', color: !isOut ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: !isOut ? 'bold' : 'normal', transition: 'all 0.2s' }}
-              onClick={() => setType('in')}
+              onClick={() => {
+                setType('in');
+                if (!isFromScanner) setAmount(orderUnitAmount);
+              }}
             >入庫</button>
           </div>
         </div>
