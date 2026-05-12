@@ -19,6 +19,7 @@ import {
   Copy,
   ListChecks,
   CheckCircle2,
+  History,
   Sun,
   Moon
 } from 'lucide-react';
@@ -48,6 +49,7 @@ const getStockState = (item) => {
 };
 
 const ORDER_UI_MEDIA_QUERY = '(min-width: 1025px)';
+const RECENT_ORDER_WARNING_HOURS = 24;
 
 const useOrderUiVisibility = () => {
   const [isVisible, setIsVisible] = useState(() => {
@@ -64,6 +66,25 @@ const useOrderUiVisibility = () => {
   }, []);
 
   return isVisible;
+};
+
+const getOrderedAtTime = (item) => {
+  if (!item.orderedAt) return null;
+  const time = new Date(item.orderedAt).getTime();
+  return Number.isNaN(time) ? null : time;
+};
+
+const formatOrderDateTime = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
 };
 
 function App() {
@@ -279,11 +300,13 @@ function App() {
   };
 
   const [isOrderPreviewOpen, setIsOrderPreviewOpen] = useState(false);
+  const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [showOrderSuccessModal, setShowOrderSuccessModal] = useState(false);
   const [exportRequester, setExportRequester] = useState(localStorage.getItem('last_requester') || '');
   const [exportError, setExportError] = useState(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState([]);
   const [lastExportedOrderItems, setLastExportedOrderItems] = useState([]);
+  const [orderWarningBaseTime, setOrderWarningBaseTime] = useState(0);
 
   const orderPreviewItems = useMemo(() => {
     return orderItems.filter(item => String(item.isOrdered).toUpperCase() !== 'TRUE');
@@ -294,7 +317,22 @@ function App() {
     return orderPreviewItems.filter(item => selected.has(item.id));
   }, [orderPreviewItems, selectedOrderIds]);
 
-  const hasOpenModal = isItemModalOpen || isScannerOpen || isSettingsOpen || Boolean(txTargetItem) || Boolean(qrPrintItem) || isOrderPreviewOpen || showOrderSuccessModal || Boolean(exportError);
+  const orderHistoryItems = useMemo(() => {
+    return items
+      .filter(item => getOrderedAtTime(item))
+      .sort((a, b) => getOrderedAtTime(b) - getOrderedAtTime(a))
+      .slice(0, 30);
+  }, [items]);
+
+  const recentReorderWarnings = useMemo(() => {
+    const threshold = orderWarningBaseTime - RECENT_ORDER_WARNING_HOURS * 60 * 60 * 1000;
+    return selectedOrderItems.filter(item => {
+      const orderedAtTime = getOrderedAtTime(item);
+      return orderedAtTime && orderedAtTime >= threshold;
+    });
+  }, [orderWarningBaseTime, selectedOrderItems]);
+
+  const hasOpenModal = isItemModalOpen || isScannerOpen || isSettingsOpen || Boolean(txTargetItem) || Boolean(qrPrintItem) || isOrderPreviewOpen || isOrderHistoryOpen || showOrderSuccessModal || Boolean(exportError);
 
   const handleExportClick = () => {
     if (!canUseOrderUi) return;
@@ -303,6 +341,7 @@ function App() {
       return;
     }
     setSelectedOrderIds(orderPreviewItems.map(item => item.id));
+    setOrderWarningBaseTime(Date.now());
     setIsOrderPreviewOpen(true);
   };
 
@@ -353,8 +392,8 @@ function App() {
     updateItem(item.id, {
       ...item,
       isOrdered: !currentIsOrdered,
-      orderedBy: !currentIsOrdered ? (exportRequester || '手動') : '',
-      orderedAt: !currentIsOrdered ? new Date().toISOString() : ''
+      orderedBy: !currentIsOrdered ? (exportRequester || '手動') : item.orderedBy,
+      orderedAt: !currentIsOrdered ? new Date().toISOString() : item.orderedAt
     });
     pushToast(!currentIsOrdered ? '発注済みにしました' : '未発注に戻しました', {
       type: 'success',
@@ -476,6 +515,9 @@ function App() {
               <>
                 <button className="btn btn-secondary btn-success-outline" onClick={handleExportClick}>
                   <FileSpreadsheet size={18} /> <span className="btn-text">発注リスト出力</span>
+                </button>
+                <button className="btn btn-secondary" onClick={() => setIsOrderHistoryOpen(true)} title="直近の発注履歴">
+                  <History size={18} /> <span className="btn-text">発注履歴</span>
                 </button>
                 <div style={{ width: '1px', height: '24px', background: 'var(--surface-border)', margin: '0 0.5rem' }}></div>
               </>
@@ -803,6 +845,7 @@ function App() {
           items={orderPreviewItems}
           selectedIds={selectedOrderIds}
           selectedCount={selectedOrderItems.length}
+          recentWarnings={recentReorderWarnings}
           requester={exportRequester}
           onRequesterChange={setExportRequester}
           onToggle={toggleOrderSelection}
@@ -810,6 +853,13 @@ function App() {
           onClear={() => setSelectedOrderIds([])}
           onClose={() => setIsOrderPreviewOpen(false)}
           onExport={() => executeExport(exportRequester)}
+        />
+      )}
+
+      {canUseOrderUi && isOrderHistoryOpen && (
+        <OrderHistoryModal
+          items={orderHistoryItems}
+          onClose={() => setIsOrderHistoryOpen(false)}
         />
       )}
 
@@ -977,7 +1027,7 @@ function InventoryMobileCard({ item, isAuditMode, auditValue, onAuditChange, can
   );
 }
 
-function OrderPreviewModal({ items, selectedIds, selectedCount, requester, onRequesterChange, onToggle, onSelectAll, onClear, onClose, onExport }) {
+function OrderPreviewModal({ items, selectedIds, selectedCount, recentWarnings, requester, onRequesterChange, onToggle, onSelectAll, onClear, onClose, onExport }) {
   const selected = new Set(selectedIds);
 
   const handleKeyDown = (event) => {
@@ -1026,6 +1076,26 @@ function OrderPreviewModal({ items, selectedIds, selectedCount, requester, onReq
           <button type="button" className="btn btn-secondary" onClick={onClear}>全解除</button>
         </div>
 
+        {recentWarnings.length > 0 && (
+          <div className="order-warning-box">
+            <div className="order-warning-title">
+              <AlertTriangle size={18} />
+              24時間以内に発注済みの部材があります
+            </div>
+            <div className="order-warning-text">
+              再発注する場合は、内容を確認してからExcel出力してください。
+            </div>
+            <div className="order-warning-list">
+              {recentWarnings.map(item => (
+                <div key={item.id} className="order-warning-item">
+                  <strong>{item.material || item.name}</strong>
+                  <span>前回: {formatOrderDateTime(item.orderedAt)} / {item.orderedBy || '発注者未入力'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="order-preview-list">
           {items.map(item => (
             <label key={item.id} className={`order-preview-row ${selected.has(item.id) ? 'selected' : ''}`}>
@@ -1054,6 +1124,49 @@ function OrderPreviewModal({ items, selectedIds, selectedCount, requester, onReq
           <button type="button" className="btn btn-primary" onClick={onExport} disabled={selectedCount === 0}>
             <FileSpreadsheet size={18} /> Excel出力
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderHistoryModal({ items, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
+      <div className="modal-content glass-panel order-history-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-title-row">
+          <h2 style={{ margin: 0 }}>直近の発注履歴</h2>
+          <button className="btn-icon" onClick={onClose} title="閉じる"><X size={22} /></button>
+        </div>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1.25rem' }}>
+          発注リスト出力後に「発注済み」にした部材を、新しい順に表示します。
+        </p>
+
+        {items.length === 0 ? (
+          <div className="history-empty">発注履歴はまだありません。</div>
+        ) : (
+          <div className="order-history-list">
+            {items.map(item => (
+              <div key={`${item.id}-${item.orderedAt}`} className="order-history-row">
+                <div className="order-history-main">
+                  <strong>{item.material || item.name}</strong>
+                  <span>{[item.name, item.size, item.length].filter(Boolean).join(' / ') || '-'}</span>
+                  {(item.projectNumber || item.projectName) && (
+                    <small>{[item.projectNumber, item.projectName].filter(Boolean).join(' / ')}</small>
+                  )}
+                </div>
+                <div className="order-history-meta">
+                  <strong>{formatOrderDateTime(item.orderedAt)}</strong>
+                  <span>{item.orderedBy || '発注者未入力'}</span>
+                  <span>発注 {item.orderQuantity || 1}{item.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="modal-footer-row">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>閉じる</button>
         </div>
       </div>
     </div>
@@ -1109,8 +1222,8 @@ function QrScannerModal({ items, onClose, onSelectCandidate }) {
   };
 
   return (
-    <div className="modal-overlay no-print" onClick={onClose} style={{ zIndex: 2000, background: 'rgba(0,0,0,0.85)' }}>
-      <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ padding: '1.5rem', maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="modal-overlay modal-overlay-top no-print" onClick={onClose} style={{ zIndex: 2000, background: 'rgba(0,0,0,0.85)' }}>
+      <div className="modal-content glass-panel scanner-modal" onClick={e => e.stopPropagation()} style={{ padding: '1.5rem', maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <QrCode size={24} color="var(--accent-color)" /> QRコードで探す
@@ -1409,8 +1522,8 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
   const nameOptions = uniqueSorted([...currentNames, ...(inputOptions?.names || [])]);
 
   return (
-    <div className="modal-overlay no-print" onClick={onClose} style={{ zIndex: 1000 }}>
-      <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown} style={{ padding: '2rem', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
+    <div className="modal-overlay modal-overlay-top no-print" onClick={onClose} style={{ zIndex: 1000 }}>
+      <div className="modal-content glass-panel item-modal" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown} style={{ padding: '2rem', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
         <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
           {isEdit ? '部材情報の編集' : (isDuplicate ? '部材を複製して登録' : '新規部材の登録')}
         </h2>
