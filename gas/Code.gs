@@ -47,12 +47,16 @@ const DEFAULTS = {
   updatedAt: ''
 };
 
-function doGet() {
+function doGet(e) {
   const sheet = getSheet_();
+  if (e && e.parameter && e.parameter.debug === '1') {
+    return json_(getDebugInfo_(sheet), e.parameter.callback);
+  }
+
   ensureHeaders_(sheet);
   ensureIds_(sheet);
   const items = readItems_(sheet);
-  return json_(items);
+  return json_(items, e && e.parameter && e.parameter.callback);
 }
 
 function doPost(e) {
@@ -84,6 +88,28 @@ function getSheet_() {
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = spreadsheet.insertSheet(SHEET_NAME);
   return sheet;
+}
+
+function getDebugInfo_(sheet) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+  const previewRowCount = Math.min(lastRow, 5);
+  const previewColumnCount = Math.min(Math.max(lastColumn, 1), FIELDS.length);
+
+  return {
+    spreadsheetName: spreadsheet.getName(),
+    spreadsheetId: spreadsheet.getId(),
+    sheetName: sheet.getName(),
+    allSheetNames: spreadsheet.getSheets().map(function(currentSheet) {
+      return currentSheet.getName();
+    }),
+    lastRow: lastRow,
+    lastColumn: lastColumn,
+    preview: previewRowCount > 0
+      ? sheet.getRange(1, 1, previewRowCount, previewColumnCount).getValues()
+      : []
+  };
 }
 
 function ensureHeaders_(sheet) {
@@ -324,8 +350,15 @@ function parseRequest_(e) {
   return JSON.parse(e.postData.contents);
 }
 
-function json_(value) {
+function json_(value, callback) {
+  const output = callback
+    ? callback + '(' + JSON.stringify(value) + ');'
+    : JSON.stringify(value);
+  const mimeType = callback
+    ? ContentService.MimeType.JAVASCRIPT
+    : ContentService.MimeType.JSON;
+
   return ContentService
-    .createTextOutput(JSON.stringify(value))
-    .setMimeType(ContentService.MimeType.JSON);
+    .createTextOutput(output)
+    .setMimeType(mimeType);
 }

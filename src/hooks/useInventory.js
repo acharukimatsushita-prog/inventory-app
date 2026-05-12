@@ -125,6 +125,36 @@ const normalizeItems = (data) => {
   };
 };
 
+const fetchItemsWithJsonp = (gasUrl) => {
+  return new Promise((resolve, reject) => {
+    const callbackName = `__acStockJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const separator = gasUrl.includes('?') ? '&' : '?';
+    const script = document.createElement('script');
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('GAS JSONP request timed out'));
+    }, 15000);
+
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      delete window[callbackName];
+      script.remove();
+    };
+
+    window[callbackName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('GAS JSONP request failed'));
+    };
+    script.src = `${gasUrl}${separator}callback=${encodeURIComponent(callbackName)}&t=${Date.now()}`;
+    document.head.appendChild(script);
+  });
+};
+
 export function useInventory(gasUrl) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -154,8 +184,14 @@ export function useInventory(gasUrl) {
     if (!gasUrl) return;
     setLoading(true);
     try {
-      const response = await fetch(gasUrl);
-      const data = await response.json();
+      let data;
+      try {
+        const response = await fetch(gasUrl);
+        data = await response.json();
+      } catch (fetchError) {
+        console.warn('GAS fetch failed; retrying with JSONP', fetchError);
+        data = await fetchItemsWithJsonp(gasUrl);
+      }
       const normalized = normalizeItems(data);
       setItems(normalized.items);
       setDataQuality(normalized.summary);
