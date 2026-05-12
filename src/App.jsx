@@ -47,7 +47,27 @@ const getStockState = (item) => {
   return 'ok';
 };
 
+const ORDER_UI_MEDIA_QUERY = '(min-width: 1025px)';
+
+const useOrderUiVisibility = () => {
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia(ORDER_UI_MEDIA_QUERY).matches;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(ORDER_UI_MEDIA_QUERY);
+    const handleChange = (event) => setIsVisible(event.matches);
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  return isVisible;
+};
+
 function App() {
+  const canUseOrderUi = useOrderUiVisibility();
   const [gasUrl, setGasUrl] = useState(localStorage.getItem('gas_api_url') || '');
   const { items, loading, syncStatus, dataQuality, addItem, updateItem, deleteItem, restoreItem, takeOutItem, restockItem, batchUpdateItems, batchProgress } = useInventory(gasUrl);
 
@@ -277,6 +297,7 @@ function App() {
   const hasOpenModal = isItemModalOpen || isScannerOpen || isSettingsOpen || Boolean(txTargetItem) || Boolean(qrPrintItem) || isOrderPreviewOpen || showOrderSuccessModal || Boolean(exportError);
 
   const handleExportClick = () => {
+    if (!canUseOrderUi) return;
     if (orderPreviewItems.length === 0) {
       setExportError('発注が必要な部材（在庫が最小ロット以下のもの）が現在ありません。');
       return;
@@ -326,6 +347,7 @@ function App() {
   };
 
   const toggleOrderedStatus = (item) => {
+    if (!canUseOrderUi) return;
     const currentIsOrdered = String(item.isOrdered).toUpperCase() === 'TRUE';
     const previousItem = { ...item };
     updateItem(item.id, {
@@ -450,10 +472,14 @@ function App() {
               <AlertTriangle size={18} />
               <span className="btn-text">要発注フィルタ</span>
             </button>
-            <button className="btn btn-secondary btn-success-outline" onClick={handleExportClick}>
-              <FileSpreadsheet size={18} /> <span className="btn-text">発注リスト出力</span>
-            </button>
-            <div style={{ width: '1px', height: '24px', background: 'var(--surface-border)', margin: '0 0.5rem' }}></div>
+            {canUseOrderUi && (
+              <>
+                <button className="btn btn-secondary btn-success-outline" onClick={handleExportClick}>
+                  <FileSpreadsheet size={18} /> <span className="btn-text">発注リスト出力</span>
+                </button>
+                <div style={{ width: '1px', height: '24px', background: 'var(--surface-border)', margin: '0 0.5rem' }}></div>
+              </>
+            )}
             <button className={`btn ${isAuditMode ? 'btn-danger' : 'btn-secondary'}`} onClick={toggleAuditMode}>
               <ListChecks size={18} /> <span className="btn-text">{isAuditMode ? '棚卸完了' : '棚卸'}</span>
             </button>
@@ -492,17 +518,19 @@ function App() {
           <span className="summary-label">在庫不足</span>
           <strong>{stockSummary.empty + stockSummary.low}</strong>
         </div>
-        <div className="summary-tile summary-accent">
-          <span className="summary-label">発注済み</span>
-          <strong>{stockSummary.ordered}</strong>
-        </div>
+        {canUseOrderUi && (
+          <div className="summary-tile summary-accent">
+            <span className="summary-label">発注済み</span>
+            <strong>{stockSummary.ordered}</strong>
+          </div>
+        )}
         <div className={`summary-tile summary-sync summary-sync-${syncStatus.state}`}>
           <span className="summary-label">保存状態</span>
           <strong>{syncStatus.state === 'saving' ? '保存中' : syncStatus.state === 'error' ? '要確認' : syncStatus.state === 'saved' ? '保存済み' : '待機中'}</strong>
         </div>
       </div>
 
-      {orderPreviewItems.length > 0 && (
+      {canUseOrderUi && orderPreviewItems.length > 0 && (
         <div className="glass-panel no-print" style={{ marginBottom: '2rem', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.5rem', borderLeft: '5px solid var(--warning-color)', background: 'rgba(245, 158, 11, 0.05)' }}>
           <AlertTriangle color="var(--warning-color)" size={24} />
           <div style={{ flex: 1 }}>
@@ -616,7 +644,11 @@ function App() {
 
                       return (
                         <tr key={item.id} className={isLow ? 'row-low-stock' : ''}>
-                          <td onClick={() => toggleOrderedStatus(item)} style={{ cursor: 'pointer', padding: '1rem' }} title="クリックで発注ステータスを切り替え">
+                          <td
+                            onClick={canUseOrderUi ? () => toggleOrderedStatus(item) : undefined}
+                            style={{ cursor: canUseOrderUi ? 'pointer' : 'default', padding: '1rem' }}
+                            title={canUseOrderUi ? 'クリックで発注ステータスを切り替え' : undefined}
+                          >
                             <ItemStatusBadge item={item} />
                           </td>
                           <td className="sticky-col sticky-name">
@@ -703,6 +735,7 @@ function App() {
                     isAuditMode={isAuditMode}
                     auditValue={auditDrafts[item.id] ?? item.quantity}
                     onAuditChange={handleAuditChange}
+                    canUseOrderUi={canUseOrderUi}
                     onToggleOrdered={toggleOrderedStatus}
                     onEdit={handleEdit}
                     onQr={setQrPrintItem}
@@ -765,7 +798,7 @@ function App() {
         </div>
       )}
 
-      {isOrderPreviewOpen && (
+      {canUseOrderUi && isOrderPreviewOpen && (
         <OrderPreviewModal
           items={orderPreviewItems}
           selectedIds={selectedOrderIds}
@@ -780,7 +813,7 @@ function App() {
         />
       )}
 
-      {showOrderSuccessModal && (
+      {canUseOrderUi && showOrderSuccessModal && (
         <div className="modal-overlay" style={{ zIndex: 2000 }}>
           <div className="modal-content glass-panel" style={{ maxWidth: '450px', padding: '2rem', textAlign: 'center' }}>
             <div style={{ background: 'var(--success-color)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
@@ -887,7 +920,7 @@ function AuditDiff({ current, actual, diff }) {
   );
 }
 
-function InventoryMobileCard({ item, isAuditMode, auditValue, onAuditChange, onToggleOrdered, onEdit, onQr, onQuantityChange }) {
+function InventoryMobileCard({ item, isAuditMode, auditValue, onAuditChange, canUseOrderUi, onToggleOrdered, onEdit, onQr, onQuantityChange }) {
   const qty = Number(item.quantity || 0);
   const actual = Number(auditValue);
   const diff = actual - qty;
@@ -896,9 +929,13 @@ function InventoryMobileCard({ item, isAuditMode, auditValue, onAuditChange, onT
   return (
     <article className={`inventory-card ${isLow ? 'inventory-card-alert' : ''}`}>
       <div className="inventory-card-head">
-        <button className="status-button" type="button" onClick={() => onToggleOrdered(item)} title="発注ステータスを切り替え">
+        {canUseOrderUi ? (
+          <button className="status-button" type="button" onClick={() => onToggleOrdered(item)} title="発注ステータスを切り替え">
+            <ItemStatusBadge item={item} />
+          </button>
+        ) : (
           <ItemStatusBadge item={item} />
-        </button>
+        )}
         <button className="btn-icon" onClick={() => onQr(item)} title="QRコード">
           <QrCode size={20} />
         </button>
