@@ -698,6 +698,105 @@ h1, h2, h3, h4, h5, h6 {
   padding: 2rem;
 }
 
+.value-summary-modal {
+  max-width: 820px;
+  padding: 2rem;
+}
+
+.value-summary-note {
+  margin: 0.4rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.value-summary-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.value-summary-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+}
+
+.value-summary-total strong {
+  color: var(--accent-color);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1;
+}
+
+.value-summary-status {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.value-summary-list {
+  max-height: 48vh;
+  overflow-y: auto;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+}
+
+.value-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.value-summary-row:last-child {
+  border-bottom: 0;
+}
+
+.value-summary-item,
+.value-summary-calculation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.value-summary-item span,
+.value-summary-calculation span,
+.value-summary-empty,
+.value-summary-footer span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.value-summary-calculation {
+  text-align: right;
+}
+
+.value-summary-calculation strong {
+  font-size: 1rem;
+}
+
+.value-summary-empty {
+  padding: 2rem;
+  text-align: center;
+}
+
+.value-summary-footer {
+  margin-top: 1rem;
+}
+
+.item-stock-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
 .order-preview-toolbar {
   display: flex;
   gap: 1rem;
@@ -1306,6 +1405,28 @@ tr:hover .sticky-col,
 
   .order-history-modal {
     padding: 1.25rem;
+  }
+
+  .value-summary-modal {
+    padding: 1.25rem;
+  }
+
+  .value-summary-overview,
+  .value-summary-row {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .value-summary-overview {
+    flex-direction: column;
+  }
+
+  .value-summary-calculation {
+    text-align: left;
+  }
+
+  .item-stock-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .order-preview-toolbar,

@@ -20,6 +20,7 @@ import {
   ListChecks,
   CheckCircle2,
   History,
+  Calculator,
   Sun,
   Moon
 } from 'lucide-react';
@@ -87,6 +88,14 @@ const formatOrderDateTime = (value) => {
   }).format(date);
 };
 
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('ja-JP', {
+    style: 'currency',
+    currency: 'JPY',
+    maximumFractionDigits: 0
+  }).format(Number(value || 0));
+};
+
 function App() {
   const canUseOrderUi = useOrderUiVisibility();
   const [gasUrl, setGasUrl] = useState(localStorage.getItem('gas_api_url') || '');
@@ -99,6 +108,7 @@ function App() {
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(!gasUrl);
+  const [isValueSummaryOpen, setIsValueSummaryOpen] = useState(false);
   const [txTargetItem, setTxTargetItem] = useState(null);
   const [qrPrintItem, setQrPrintItem] = useState(null);
   const [expandedCategories, setExpandedCategories] = useState([]);
@@ -243,6 +253,27 @@ function App() {
     }, { total: 0, empty: 0, low: 0, ordered: 0 });
   }, [items]);
 
+  const valueSummary = useMemo(() => {
+    const details = items
+      .map(item => {
+        const quantity = Math.max(0, Number(item.quantity || 0));
+        const unitPrice = Math.max(0, Number(item.unitPrice || 0));
+        return {
+          ...item,
+          quantity,
+          unitPrice,
+          inventoryValue: quantity * unitPrice
+        };
+      })
+      .sort((a, b) => b.inventoryValue - a.inventoryValue);
+
+    return {
+      details,
+      totalValue: details.reduce((total, item) => total + item.inventoryValue, 0),
+      pricedCount: details.filter(item => item.unitPrice > 0).length
+    };
+  }, [items]);
+
   const inputOptions = useMemo(() => ({
     categories: uniqueSorted([...MATERIALS, ...items.map(item => item.category)]),
     names: uniqueSorted(items.map(item => item.name)),
@@ -332,7 +363,7 @@ function App() {
     });
   }, [orderWarningBaseTime, selectedOrderItems]);
 
-  const hasOpenModal = isItemModalOpen || isScannerOpen || isSettingsOpen || Boolean(txTargetItem) || Boolean(qrPrintItem) || isOrderPreviewOpen || isOrderHistoryOpen || showOrderSuccessModal || Boolean(exportError);
+  const hasOpenModal = isItemModalOpen || isScannerOpen || isSettingsOpen || isValueSummaryOpen || Boolean(txTargetItem) || Boolean(qrPrintItem) || isOrderPreviewOpen || isOrderHistoryOpen || showOrderSuccessModal || Boolean(exportError);
 
   const handleExportClick = () => {
     if (!canUseOrderUi) return;
@@ -524,6 +555,9 @@ function App() {
             )}
             <button className={`btn ${isAuditMode ? 'btn-danger' : 'btn-secondary'}`} onClick={toggleAuditMode}>
               <ListChecks size={18} /> <span className="btn-text">{isAuditMode ? '棚卸完了' : '棚卸'}</span>
+            </button>
+            <button className="btn btn-secondary" onClick={() => setIsValueSummaryOpen(true)} title="在庫金額を確認">
+              <Calculator size={18} /> <span className="btn-text">金額集計</span>
             </button>
             <button className="btn btn-secondary" onClick={toggleTheme} title={theme === 'dark' ? 'ライトモードに切替' : 'ダークモードに切替'}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -813,6 +847,13 @@ function App() {
           isFromScanner={isScannerTransaction}
           onClose={() => { setTxTargetItem(null); setIsScannerTransaction(false); }}
           onConfirm={handleTransactionConfirm}
+        />
+      )}
+
+      {isValueSummaryOpen && (
+        <InventoryValueModal
+          summary={valueSummary}
+          onClose={() => setIsValueSummaryOpen(false)}
         />
       )}
 
@@ -1362,6 +1403,58 @@ function SettingsModal({ initialUrl, onClose, onSave }) {
   );
 }
 
+function InventoryValueModal({ summary, onClose }) {
+  return (
+    <div className="modal-overlay no-print" onClick={onClose} style={{ zIndex: 1200 }}>
+      <div className="modal-content glass-panel value-summary-modal" onClick={event => event.stopPropagation()}>
+        <div className="modal-title-row">
+          <div>
+            <h2 style={{ margin: 0 }}>在庫金額集計</h2>
+            <p className="value-summary-note">単価 × 現在庫数で計算した税抜金額です。</p>
+          </div>
+          <button className="btn-icon" onClick={onClose} title="閉じる">
+            <X size={22} />
+          </button>
+        </div>
+
+        <div className="value-summary-overview">
+          <div className="value-summary-total">
+            <span>在庫合計金額</span>
+            <strong>{formatCurrency(summary.totalValue)}</strong>
+          </div>
+          <div className="value-summary-status">
+            単価登録済み {summary.pricedCount} / {summary.details.length} 件
+          </div>
+        </div>
+
+        <div className="value-summary-list">
+          {summary.details.length === 0 ? (
+            <div className="value-summary-empty">登録されている部材がありません。</div>
+          ) : (
+            summary.details.map(item => (
+              <div className="value-summary-row" key={item.id}>
+                <div className="value-summary-item">
+                  <strong>{item.material || item.name}</strong>
+                  <span>{item.category} / {item.name}</span>
+                </div>
+                <div className="value-summary-calculation">
+                  <span>{formatCurrency(item.unitPrice)} × {item.quantity}{item.unit}</span>
+                  <strong>{formatCurrency(item.inventoryValue)}</strong>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="modal-footer-row value-summary-footer">
+          <span>単価未入力の部材は0円として計算されます。</span>
+          <button className="btn btn-primary" onClick={onClose}>閉じる</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TransactionModal({ item, initialType, lastTransaction, isFromScanner, onClose, onConfirm }) {
   const orderUnitAmount = Number(item.orderQuantity || 1);
   const defaultAmount = !isFromScanner
@@ -1489,6 +1582,7 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
     remarks: initialData?.remarks || '',
     modelCode: initialData?.modelCode || '',
     quantity: isDuplicate ? 0 : (initialData?.quantity ?? 0),
+    unitPrice: initialData?.unitPrice ?? 0,
     minLot: initialData?.minLot ?? 5,
     orderQuantity: initialData?.orderQuantity ?? 10
   });
@@ -1502,6 +1596,7 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
     onSave({
       ...formData,
       quantity: Number(formData.quantity),
+      unitPrice: Math.max(0, Number(formData.unitPrice)),
       minLot: Number(formData.minLot),
       orderQuantity: Number(formData.orderQuantity)
     });
@@ -1577,7 +1672,7 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0', marginBottom: '1rem' }}>※ここに実際の部品の名称や仕様を入力してください。一覧に表示されます。</p>
           <div style={{ height: '1px', background: 'var(--surface-border)', margin: '1rem 0' }}></div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+          <div className="item-stock-grid">
             <div className="form-group">
               <label className="form-label">現在庫数</label>
               <input required type="number" min="0" className="form-control" value={formData.quantity} onChange={e => handleChange('quantity', e.target.value)} />
@@ -1592,6 +1687,10 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
               <datalist id="unit-list">
                 {(inputOptions?.units || []).map(value => <option key={value} value={value} />)}
               </datalist>
+            </div>
+            <div className="form-group">
+              <label className="form-label">単価（円・税抜）</label>
+              <input required type="number" min="0" step="1" className="form-control" value={formData.unitPrice} onChange={e => handleChange('unitPrice', e.target.value)} />
             </div>
           </div>
           <div style={{ height: '1px', background: 'var(--surface-border)', margin: '1rem 0' }}></div>
