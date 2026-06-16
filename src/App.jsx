@@ -50,7 +50,7 @@ const getStockState = (item) => {
   return 'ok';
 };
 
-const ORDER_UI_MEDIA_QUERY = '(min-width: 1025px)';
+const ORDER_UI_MEDIA_QUERY = '(min-width: 768px)';
 const RECENT_ORDER_WARNING_HOURS = 24;
 
 const useOrderUiVisibility = () => {
