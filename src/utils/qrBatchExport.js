@@ -54,9 +54,10 @@ export async function exportQrLabels(items) {
 
     const qrCell = ws.getRow(qrExcelRow).getCell(col);
     qrCell.border = {
-      top:   { style: 'thin' },
-      left:  { style: 'thin' },
-      right: { style: 'thin' },
+      top:    { style: 'thin' },
+      left:   { style: 'thin' },
+      right:  { style: 'thin' },
+      bottom: { style: 'thin' },
     };
 
     const lines = [item.name];
@@ -68,6 +69,7 @@ export async function exportQrLabels(items) {
     txtCell.alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
     txtCell.font = { size: 9 };
     txtCell.border = {
+      top:    { style: 'thin' },
       left:   { style: 'thin' },
       right:  { style: 'thin' },
       bottom: { style: 'thin' },
