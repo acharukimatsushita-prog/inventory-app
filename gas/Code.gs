@@ -353,6 +353,54 @@ function parseRequest_(e) {
   return JSON.parse(e.postData.contents);
 }
 
+// ===== 一回限り移行関数: 実行後は削除してOK =====
+// 対象: CAPボルト(SUS) と 六角ボルト(メッキ) の size+length を結合
+// 実行前に必ずスプレッドシートをバックアップしてください
+function migrateBoltSizeLength() {
+  const sheet = getSheet_();
+  const values = getTableValues_(sheet);
+  const headers = values.headers;
+  const indexes = getIndexes_(headers);
+  const log = [];
+
+  values.rows.forEach(function(row, rowOffset) {
+    const sheetRow = rowOffset + 2;
+    const item = rowToItem_(row, headers, sheetRow);
+
+    const name = String(item.name || '').trim();
+    const material = String(item.material || '').trim();
+
+    // 対象判定: CAPボルト/SUS・CAPボルト/メッキ・六角ボルト/メッキ
+    const isTarget =
+      (name.indexOf('CAPボルト') !== -1 && (material.indexOf('SUS') !== -1 || material.indexOf('メッキ') !== -1)) ||
+      (name.indexOf('六角ボルト') !== -1 && material.indexOf('メッキ') !== -1);
+
+    if (!isTarget) return;
+
+    const size   = String(item.size   || '').trim();
+    const length = String(item.length || '').trim();
+
+    // size・length が両方有効な値のときだけ変換
+    if (!size || size === '-' || !length || length === '-') return;
+
+    const newSize = size + '-' + length;
+
+    sheet.getRange(sheetRow, indexes.size   + 1).setValue(newSize);
+    sheet.getRange(sheetRow, indexes.length + 1).setValue('');
+    sheet.getRange(sheetRow, indexes.updatedAt + 1).setValue(new Date().toISOString());
+
+    log.push(name + ' [' + material + '] : ' + size + ' / ' + length + ' → ' + newSize);
+  });
+
+  if (log.length === 0) {
+    Logger.log('対象アイテムが見つかりませんでした。name/materialの値を確認してください。');
+  } else {
+    log.forEach(function(line) { Logger.log(line); });
+    Logger.log('--- 合計 ' + log.length + ' 件を変換しました ---');
+  }
+}
+// ================================================
+
 function json_(value, callback) {
   const output = callback
     ? callback + '(' + JSON.stringify(value) + ');'

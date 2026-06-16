@@ -1314,13 +1314,13 @@ function QrPrintModal({ item, onClose }) {
             <head>
               <title>QRコード印刷</title>
               <style>
-                @page { size: 18mm 50mm; margin: 0; }
+                @page { size: 60mm 18mm; margin: 0; }
                 body { margin: 0; padding: 0; font-family: sans-serif; }
-                .label { display: flex; flex-direction: column; align-items: center; width: 18mm; height: 50mm; overflow: hidden; padding: 1mm; box-sizing: border-box; }
-                .qr img { width: 16mm; height: 16mm; }
-                .text { width: 100%; text-align: center; margin-top: 1mm; }
-                .name { font-weight: bold; font-size: 10pt; line-height: 1.3; word-break: break-all; }
-                .detail { font-size: 9pt; line-height: 1.3; color: #333; }
+                .label { display: flex; flex-direction: row; align-items: center; width: 60mm; height: 18mm; overflow: hidden; padding: 1mm; box-sizing: border-box; }
+                .qr img { width: 16mm; height: 16mm; flex-shrink: 0; }
+                .text { flex: 1; padding-left: 2mm; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+                .name { font-weight: bold; font-size: 11pt; line-height: 1.3; word-break: break-all; }
+                .detail { font-weight: bold; font-size: 13pt; line-height: 1.3; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
               </style>
             </head>
             <body>
@@ -1328,10 +1328,10 @@ function QrPrintModal({ item, onClose }) {
                 <div class="qr"><img src="${pngUrl}" /></div>
                 <div class="text">
                   <div class="name">${item.name}</div>
-                  ${item.size !== '-' ? `<div class="detail">${item.size}</div>` : ''}
-                  ${item.length !== '-' ? `<div class="detail">${item.length}mm</div>` : ''}
+                  ${(item.size !== '-' || item.length !== '-') ? `<div class="detail">${[item.size !== '-' ? item.size : '', item.length !== '-' ? item.length + 'mm' : ''].filter(Boolean).join('　')}</div>` : ''}
                 </div>
               </div>
+
               <script>
                 window.onload = function() { setTimeout(function() { window.print(); }, 200); }
               </script>
@@ -1365,7 +1365,7 @@ function QrPrintModal({ item, onClose }) {
       <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ padding: '2rem', maxWidth: '400px', textAlign: 'center' }}>
         <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>QRコードの発行</h3>
 
-        <div className="print-area" style={{ background: '#fff', borderRadius: '8px', color: '#000', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', width: '18mm', height: '50mm', overflow: 'hidden', padding: '1mm', boxSizing: 'border-box' }}>
+        <div className="print-area" style={{ background: '#fff', borderRadius: '8px', color: '#000', display: 'inline-flex', flexDirection: 'row', alignItems: 'center', width: '60mm', height: '18mm', overflow: 'hidden', padding: '1mm', boxSizing: 'border-box' }}>
           <QRCodeCanvas
             id="qr-canvas"
             value={item.id}
@@ -1374,10 +1374,13 @@ function QrPrintModal({ item, onClose }) {
             includeMargin={true}
             style={{ width: `${qrSizeMm}mm`, height: `${qrSizeMm}mm`, flexShrink: 0 }}
           />
-          <div style={{ width: '100%', textAlign: 'center', marginTop: '1mm' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '10pt', lineHeight: 1.3, wordBreak: 'break-all' }}>{item.name}</div>
-            {item.size !== '-' && <div style={{ fontSize: '9pt', lineHeight: 1.3, color: '#333' }}>{item.size}</div>}
-            {item.length !== '-' && <div style={{ fontSize: '9pt', lineHeight: 1.3, color: '#333' }}>{item.length}mm</div>}
+          <div style={{ flex: 1, paddingLeft: '2mm', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '11pt', lineHeight: 1.3, wordBreak: 'break-all' }}>{item.name}</div>
+            {(item.size !== '-' || item.length !== '-') && (
+              <div style={{ fontWeight: 'bold', fontSize: '13pt', lineHeight: 1.3, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {[item.size !== '-' ? item.size : '', item.length !== '-' ? item.length + 'mm' : ''].filter(Boolean).join('　')}
+              </div>
+            )}
           </div>
         </div>
 
