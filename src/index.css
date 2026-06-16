@@ -1324,6 +1324,10 @@ tr:hover .sticky-col,
     flex-direction: column;
   }
 
+  .main-layout > main {
+    width: 100%;
+  }
+
   .sidebar {
     width: 100% !important;
   }
