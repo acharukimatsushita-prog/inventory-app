@@ -50,25 +50,9 @@ const getStockState = (item) => {
   return 'ok';
 };
 
-const ORDER_UI_MEDIA_QUERY = '(min-width: 768px)';
 const RECENT_ORDER_WARNING_HOURS = 24;
 
-const useOrderUiVisibility = () => {
-  const [isVisible, setIsVisible] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia(ORDER_UI_MEDIA_QUERY).matches;
-  });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(ORDER_UI_MEDIA_QUERY);
-    const handleChange = (event) => setIsVisible(event.matches);
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  return isVisible;
-};
+const useOrderUiVisibility = () => true;
 
 const getOrderedAtTime = (item) => {
   if (!item.orderedAt) return null;
