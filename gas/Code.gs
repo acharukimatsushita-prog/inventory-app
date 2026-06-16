@@ -401,7 +401,16 @@ function json_(value, callback) {
 }
 
 // ===== 発注点以下 メール通知 =====
+// メール通知を一時停止する場合は false に変更し、GASにデプロイする
+// 再開する場合は true に戻してデプロイする
+var NOTIFY_ENABLED = false;
+
 function checkLowStockAndNotify() {
+  if (!NOTIFY_ENABLED) {
+    Logger.log('メール通知は停止中です（NOTIFY_ENABLED = false）。');
+    return;
+  }
+
   var props = PropertiesService.getScriptProperties();
   var email = props.getProperty('NOTIFY_EMAIL');
   if (!email) {
@@ -415,7 +424,7 @@ function checkLowStockAndNotify() {
   var lowStock = items.filter(function(item) {
     var qty = Number(item.quantity || 0);
     var min = Number(item.minLot || 0);
-    return min > 0 && qty <= min;
+    return min > 0 && qty <= min && !toBoolean_(item.isOrdered);
   });
 
   if (lowStock.length === 0) {
