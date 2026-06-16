@@ -58,6 +58,7 @@ export const exportOrderList = async (itemsToOrder, requesterName = '') => {
     ];
 
     const sheet = workbook.worksheets[0]; // 1枚目のシートを使用
+    sheet.name = `${today.getFullYear()}.${(today.getMonth()+1).toString().padStart(2,'0')}.${today.getDate().toString().padStart(2,'0')}`;
 
     // もともと入っているダミーデータを5行目から消去しておく（レイアウト維持のため）
     for(let r = 5; r <= 30; r++) {
