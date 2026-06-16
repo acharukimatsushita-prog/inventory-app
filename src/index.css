@@ -1350,21 +1350,13 @@ tr:hover .sticky-col,
 
   .mobile-card-list {
     display: grid;
-    gap: 0.85rem;
-  }
-
-  .search-scan-bar {
-    flex-direction: column;
-    align-items: stretch !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
   }
 
   .search-wrapper {
     width: 100% !important;
     max-width: none !important;
-  }
-
-  .search-scan-bar .btn {
-    width: 100%;
   }
 
   .modal-content {
