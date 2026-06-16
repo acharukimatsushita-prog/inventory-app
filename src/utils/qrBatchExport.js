@@ -23,8 +23,8 @@ export async function exportQrLabels(items) {
 
   const COLS = 11;
   const COL_WIDTH = 9.5;  // ~18mm
-  const ROW_QR_H = 45;    // ~16mm in pt
-  const ROW_TXT_H = 96;   // ~34mm in pt
+  const ROW_H = 142;       // 50mm in points (1ラベル = 1行)
+  const QR_PX = 61;        // 16mm at 96dpi
 
   for (let c = 1; c <= COLS; c++) {
     ws.getColumn(c).width = COL_WIDTH;
@@ -32,43 +32,33 @@ export async function exportQrLabels(items) {
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const blockRow = Math.floor(i / COLS);
+    const rowIndex = Math.floor(i / COLS) + 1;  // 1行 = 1ラベル
     const col = (i % COLS) + 1;
-    const qrExcelRow = blockRow * 2 + 1;
-    const txtExcelRow = blockRow * 2 + 2;
 
-    ws.getRow(qrExcelRow).height = ROW_QR_H;
-    ws.getRow(txtExcelRow).height = ROW_TXT_H;
+    ws.getRow(rowIndex).height = ROW_H;
 
+    // QR画像をセル上部に固定サイズで配置
     const qrDataUrl = await QRCode.toDataURL(item.id, {
       width: 160, margin: 1, errorCorrectionLevel: 'M',
     });
     const base64 = qrDataUrl.split(',')[1];
     const imageId = workbook.addImage({ base64, extension: 'png' });
-
     ws.addImage(imageId, {
-      tl: { col: col - 1, row: qrExcelRow - 1 },
-      br: { col: col, row: qrExcelRow },
+      tl: { col: col - 1, row: rowIndex - 1 },
+      ext: { width: QR_PX, height: QR_PX },
       editAs: 'oneCell',
     });
 
-    const qrCell = ws.getRow(qrExcelRow).getCell(col);
-    qrCell.border = {
-      top:    { style: 'thin' },
-      left:   { style: 'thin' },
-      right:  { style: 'thin' },
-      bottom: { style: 'thin' },
-    };
-
+    // テキストをセル下部に配置
     const lines = [item.name];
     if (item.size && item.size !== '-') lines.push(item.size);
     if (item.length && item.length !== '-') lines.push(item.length + 'mm');
 
-    const txtCell = ws.getRow(txtExcelRow).getCell(col);
-    txtCell.value = lines.join('\n');
-    txtCell.alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
-    txtCell.font = { size: 9 };
-    txtCell.border = {
+    const cell = ws.getRow(rowIndex).getCell(col);
+    cell.value = lines.join('\n');
+    cell.alignment = { wrapText: true, vertical: 'bottom', horizontal: 'center' };
+    cell.font = { size: 11, bold: true };
+    cell.border = {
       top:    { style: 'thin' },
       left:   { style: 'thin' },
       right:  { style: 'thin' },

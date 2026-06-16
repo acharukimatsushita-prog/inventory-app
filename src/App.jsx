@@ -848,9 +848,6 @@ function App() {
       {txTargetItem && (
         <TransactionModal
           item={txTargetItem}
-          initialType={txInitialType}
-          lastTransaction={lastTransaction}
-          isFromScanner={isScannerTransaction}
           onClose={() => { setTxTargetItem(null); setIsScannerTransaction(false); }}
           onConfirm={handleTransactionConfirm}
         />
@@ -1322,8 +1319,8 @@ function QrPrintModal({ item, onClose }) {
                 .label { display: flex; flex-direction: column; align-items: center; width: 18mm; height: 50mm; overflow: hidden; padding: 1mm; box-sizing: border-box; }
                 .qr img { width: 16mm; height: 16mm; }
                 .text { width: 100%; text-align: center; margin-top: 1mm; }
-                .name { font-weight: bold; font-size: 7pt; line-height: 1.3; word-break: break-all; }
-                .detail { font-size: 6pt; line-height: 1.3; color: #333; }
+                .name { font-weight: bold; font-size: 10pt; line-height: 1.3; word-break: break-all; }
+                .detail { font-size: 9pt; line-height: 1.3; color: #333; }
               </style>
             </head>
             <body>
@@ -1378,9 +1375,9 @@ function QrPrintModal({ item, onClose }) {
             style={{ width: `${qrSizeMm}mm`, height: `${qrSizeMm}mm`, flexShrink: 0 }}
           />
           <div style={{ width: '100%', textAlign: 'center', marginTop: '1mm' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '7pt', lineHeight: 1.3, wordBreak: 'break-all' }}>{item.name}</div>
-            {item.size !== '-' && <div style={{ fontSize: '6pt', lineHeight: 1.3, color: '#333' }}>{item.size}</div>}
-            {item.length !== '-' && <div style={{ fontSize: '6pt', lineHeight: 1.3, color: '#333' }}>{item.length}mm</div>}
+            <div style={{ fontWeight: 'bold', fontSize: '10pt', lineHeight: 1.3, wordBreak: 'break-all' }}>{item.name}</div>
+            {item.size !== '-' && <div style={{ fontSize: '9pt', lineHeight: 1.3, color: '#333' }}>{item.size}</div>}
+            {item.length !== '-' && <div style={{ fontSize: '9pt', lineHeight: 1.3, color: '#333' }}>{item.length}mm</div>}
           </div>
         </div>
 
@@ -1486,57 +1483,19 @@ function InventoryValueModal({ summary, onClose }) {
   );
 }
 
-function TransactionModal({ item, initialType, lastTransaction, isFromScanner, onClose, onConfirm }) {
-  const orderUnitAmount = Number(item.orderQuantity || 1);
-  const defaultAmount = !isFromScanner
-    ? (initialType === 'out' ? 1 : orderUnitAmount)
-    : (lastTransaction?.amount || 1);
-  const [amount, setAmount] = useState(defaultAmount);
-  const [type, setType] = useState(initialType || 'out');
-  const formRef = useRef(null);
-  const isOut = type === 'out';
-  const color = isOut ? 'var(--danger-color)' : 'var(--success-color)';
-  const canOutOne = Number(item.quantity || 0) >= 1;
-  const canRepeatLast = lastTransaction?.type !== 'out' || Number(item.quantity || 0) >= Number(lastTransaction?.amount || 1);
+function TransactionModal({ item, onClose, onConfirm }) {
+  const [amount, setAmount] = useState(1);
   const handleKeyDown = (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();
       onClose();
-    }
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      formRef.current?.requestSubmit();
     }
   };
 
   return (
     <div className="modal-overlay no-print" onClick={onClose} style={{ zIndex: 1000 }}>
       <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown} style={{ padding: '2rem', maxWidth: '400px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {isOut ? <ArrowDownCircle size={28} color={color} /> : <ArrowUpCircle size={28} color={color} />}
-            <h2 style={{ margin: 0, color: color }}>{isOut ? '出庫' : '入庫'}</h2>
-          </div>
-
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.1)', borderRadius: '8px', padding: '4px' }}>
-            <button
-              type="button"
-              style={{ padding: '6px 16px', border: 'none', borderRadius: '6px', background: isOut ? 'var(--danger-color)' : 'transparent', color: isOut ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: isOut ? 'bold' : 'normal', transition: 'all 0.2s' }}
-              onClick={() => {
-                setType('out');
-                if (!isFromScanner) setAmount(1);
-              }}
-            >出庫</button>
-            <button
-              type="button"
-              style={{ padding: '6px 16px', border: 'none', borderRadius: '6px', background: !isOut ? 'var(--success-color)' : 'transparent', color: !isOut ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: !isOut ? 'bold' : 'normal', transition: 'all 0.2s' }}
-              onClick={() => {
-                setType('in');
-                if (!isFromScanner) setAmount(orderUnitAmount);
-              }}
-            >入庫</button>
-          </div>
-        </div>
+        <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem' }}>数量を選択</h2>
         <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
           <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
             {item.name}
@@ -1551,40 +1510,19 @@ function TransactionModal({ item, initialType, lastTransaction, isFromScanner, o
             </div>
           )}
         </div>
-        {isFromScanner && (
-          <div className="quick-actions">
-            <button
-              type="button"
-              className="btn btn-secondary quick-action"
-              onClick={() => onConfirm(1, 'out')}
-              disabled={!canOutOne}
-            >
-              <ArrowDownCircle size={16} /> +1 出庫
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary quick-action"
-              onClick={() => onConfirm(Number(lastTransaction?.amount || 1), lastTransaction?.type || 'out')}
-              disabled={!canRepeatLast}
-            >
-              前回と同じ操作
-            </button>
+        <div className="form-group">
+          <label className="form-label">数量 ({item.unit})</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setAmount(Math.max(1, amount - 1))}>-</button>
+            <input autoFocus type="number" min="1" className="form-control" value={amount} onChange={e => setAmount(Number(e.target.value))} style={{ textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold' }} />
+            <button type="button" className="btn btn-secondary" onClick={() => setAmount(amount + 1)}>+</button>
           </div>
-        )}
-        <form ref={formRef} onSubmit={e => { e.preventDefault(); onConfirm(Number(amount), type); }}>
-          <div className="form-group">
-            <label className="form-label">{isOut ? '出庫数' : '入庫数'} ({item.unit})</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setAmount(Math.max(1, amount - 1))}>-</button>
-              <input required autoFocus type="number" min="1" max={isOut ? item.quantity : undefined} className="form-control" value={amount} onChange={e => setAmount(Number(e.target.value))} style={{ textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold' }} />
-              <button type="button" className="btn btn-secondary" onClick={() => setAmount(amount + 1)}>+</button>
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>キャンセル</button>
-            <button type="submit" className="btn" style={{ background: color, color: 'white' }} disabled={isOut && amount > item.quantity}>{isOut ? '出庫する' : '入庫する'}</button>
-          </div>
-        </form>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>
+          <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>キャンセル</button>
+          <button type="button" className="btn" style={{ flex: 1, background: 'var(--danger-color)', color: 'white' }} disabled={amount > item.quantity} onClick={() => onConfirm(Number(amount), 'out')}>出庫する</button>
+          <button type="button" className="btn" style={{ flex: 1, background: 'var(--success-color)', color: 'white' }} onClick={() => onConfirm(Number(amount), 'in')}>入庫する</button>
+        </div>
       </div>
     </div>
   );
