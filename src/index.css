@@ -92,6 +92,8 @@ h1, h2, h3, h4, h5, h6 {
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-family);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn:active {
@@ -340,7 +342,9 @@ h1, h2, h3, h4, h5, h6 {
     align-items: stretch;
   }
   .action-group {
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
   .search-wrapper {
     flex: 1;
