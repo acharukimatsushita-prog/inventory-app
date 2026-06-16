@@ -1251,8 +1251,14 @@ function QrScannerModal({ items, onClose, onSelectCandidate }) {
       });
 
       if (code && code.data) {
-        // IDが一致するアイテムを検索
-        const matchedItem = items.find(i => i.id === code.data);
+        // URL形式（gasUrl?id=UUID）と生UUID両方に対応
+        let scannedId = code.data;
+        try {
+          const url = new URL(code.data);
+          const idParam = url.searchParams.get('id');
+          if (idParam) scannedId = idParam;
+        } catch (_) { /* 生UUIDの場合はそのまま */ }
+        const matchedItem = items.find(i => i.id === scannedId);
         if (matchedItem) {
           onSelectCandidate(matchedItem);
           return; // スキャンループを停止
