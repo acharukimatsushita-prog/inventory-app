@@ -18,20 +18,38 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo.png'],
+      includeAssets: ['icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'favicon.svg'],
       manifest: {
-        name: 'FA部材在庫管理システム',
-        short_name: '在庫管理',
+        name: 'AC-STOCK',
+        short_name: 'AC-STOCK',
         description: 'FA組立部門向け在庫管理システム',
         theme_color: '#1D4E9E',
-        background_color: '#0f172a',
+        background_color: '#09090b',
         display: 'standalone',
         icons: [
           {
-            src: 'logo.png',
-            sizes: '192x192 512x512',
+            src: 'icon-192.png',
+            sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'icon-maskable-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       }
