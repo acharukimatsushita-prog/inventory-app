@@ -2,6 +2,10 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 
+// 1ラベル = 60mm×18mm（横長）
+// QR列(16mm) + テキスト列(44mm) の2列構成
+// A4(200mm usable) ÷ 60mm = 3ラベル/行
+
 export async function exportQrLabels(items) {
   if (!items || items.length === 0) {
     alert('登録されている部材がありません。');
@@ -21,46 +25,63 @@ export async function exportQrLabels(items) {
     header: 0, footer: 0,
   };
 
-  const COLS = 11;
-  const COL_WIDTH = 9.5;  // ~18mm
-  const ROW_H = 142;       // 50mm in points (1ラベル = 1行)
-  const QR_PX = 61;        // 16mm at 96dpi
+  const LABELS_PER_ROW = 3;   // A4横に3ラベル
+  const QR_COL_W  = 7.9;      // ~16mm
+  const TXT_COL_W = 23.0;     // ~44mm
+  const ROW_H     = 51;       // 18mm in pt
+  const QR_PX     = 61;       // 16mm at 96dpi
 
-  for (let c = 1; c <= COLS; c++) {
-    ws.getColumn(c).width = COL_WIDTH;
+  // 列幅設定（QR列・テキスト列を交互に3セット = 6列）
+  for (let label = 0; label < LABELS_PER_ROW; label++) {
+    ws.getColumn(label * 2 + 1).width = QR_COL_W;   // QR列
+    ws.getColumn(label * 2 + 2).width = TXT_COL_W;  // テキスト列
   }
 
   for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const rowIndex = Math.floor(i / COLS) + 1;  // 1行 = 1ラベル
-    const col = (i % COLS) + 1;
+    const item      = items[i];
+    const labelRow  = Math.floor(i / LABELS_PER_ROW);
+    const labelCol  = i % LABELS_PER_ROW;
+    const excelRow  = labelRow + 1;
+    const qrCol     = labelCol * 2 + 1;   // 1,3,5
+    const txtCol    = labelCol * 2 + 2;   // 2,4,6
 
-    ws.getRow(rowIndex).height = ROW_H;
+    ws.getRow(excelRow).height = ROW_H;
 
-    // QR画像をセル上部に固定サイズで配置
+    // QR画像生成・配置
     const qrDataUrl = await QRCode.toDataURL(item.id, {
       width: 160, margin: 1, errorCorrectionLevel: 'M',
     });
-    const base64 = qrDataUrl.split(',')[1];
+    const base64  = qrDataUrl.split(',')[1];
     const imageId = workbook.addImage({ base64, extension: 'png' });
     ws.addImage(imageId, {
-      tl: { col: col - 1, row: rowIndex - 1 },
+      tl: { col: qrCol - 1, row: excelRow - 1 },
       ext: { width: QR_PX, height: QR_PX },
       editAs: 'oneCell',
     });
 
-    // テキストをセル下部に配置
-    const lines = [item.name];
-    if (item.size && item.size !== '-') lines.push(item.size);
-    if (item.length && item.length !== '-') lines.push(item.length + 'mm');
-
-    const cell = ws.getRow(rowIndex).getCell(col);
-    cell.value = lines.join('\n');
-    cell.alignment = { wrapText: true, vertical: 'bottom', horizontal: 'center' };
-    cell.font = { size: 11, bold: true };
-    cell.border = {
+    // QR列の罫線（上・左・下）
+    ws.getRow(excelRow).getCell(qrCol).border = {
       top:    { style: 'thin' },
       left:   { style: 'thin' },
+      bottom: { style: 'thin' },
+    };
+
+    // テキスト列（名称 + 規格・仕様）
+    const details = [
+      item.size   && item.size   !== '-' ? item.size   : '',
+      item.length && item.length !== '-' ? item.length + 'mm' : '',
+    ].filter(Boolean).join('　');
+
+    const txtCell = ws.getRow(excelRow).getCell(txtCol);
+    txtCell.value = {
+      richText: [
+        { text: item.name + '\n', font: { bold: true, size: 9 } },
+        ...(details ? [{ text: details, font: { bold: true, size: 13 } }] : []),
+      ],
+    };
+    txtCell.alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
+    txtCell.border = {
+      top:    { style: 'thin' },
       right:  { style: 'thin' },
       bottom: { style: 'thin' },
     };
