@@ -444,12 +444,14 @@ function checkLowStockAndNotify() {
 }
 
 function createOrderListExcel_(items) {
-  var files = DriveApp.getFilesByName('template.xlsx');
-  if (!files.hasNext()) {
-    Logger.log('template.xlsx がマイドライブに見つかりません。ac.seizo.team@gmail.com のマイドライブにアップロードしてください。');
+  var TEMPLATE_ID = '1otwxaJanQ5Q8IYhde_WmKBe3pX1q14nwBC9A0xm8gy8';
+  var templateSs;
+  try {
+    templateSs = SpreadsheetApp.openById(TEMPLATE_ID);
+  } catch(e) {
+    Logger.log('テンプレートを開けません。ID: ' + TEMPLATE_ID + ' / ' + e.message);
     return [];
   }
-  var templateFile = files.next();
   var today    = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd');
   var dateLabel = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy.MM.dd');
 
@@ -467,9 +469,8 @@ function createOrderListExcel_(items) {
   Object.keys(groups).forEach(function(key) {
     var g = groups[key];
 
-    // テンプレートをコピーして開く
-    var copy = templateFile.makeCopy('_発注リスト_tmp_' + key);
-    var ss = SpreadsheetApp.open(copy);
+    // Spreadsheet.copy() で Google Sheets として複製（xlsx バイナリではなくシートとして操作可能）
+    var ss = templateSs.copy('_発注リスト_tmp_' + key);
     var ws = ss.getSheets()[0];
     ws.setName(dateLabel);
 
@@ -483,9 +484,11 @@ function createOrderListExcel_(items) {
     // データ行（excelExport.js と同じ列配置）
     g.rows.forEach(function(item, i) {
       var row  = 5 + i;
-      var name = item.material && item.material !== '-'
-        ? item.name + ' ' + item.material
-        : item.name;
+      var mat = (item.material && item.material !== '-') ? String(item.material).trim() : '';
+      var itemName = String(item.name || '').trim();
+      var name = (mat && mat !== itemName && itemName.indexOf(mat) === -1)
+        ? itemName + ' ' + mat
+        : itemName;
       ws.getRange(row, 2).setValue(i + 1);                            // B: No.
       ws.getRange(row, 3).setValue(item.supplier  || '');             // C: 発注先
       ws.getRange(row, 4).setValue(item.maker     || '');             // D: メーカー
@@ -497,17 +500,21 @@ function createOrderListExcel_(items) {
 
     SpreadsheetApp.flush();
 
-    // .xlsx として取得
+    // .xlsx として取得（DriveApp.getAs は Google Sheets→xlsx 非対応のため UrlFetchApp を使用）
     var safeNum  = g.projectNumber.replace(/[\\/:*?"<>|]/g, '_');
     var safeName = g.projectName.replace(/[\\/:*?"<>|]/g, '_');
     var fileName = '発注書_' + safeNum + '_' + safeName + '_' + today + '.xlsx';
 
-    var blob = DriveApp.getFileById(ss.getId())
-      .getAs('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-      .setName(fileName);
+    var exportUrl = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=xlsx';
+    var token = ScriptApp.getOAuthToken();
+    var response = UrlFetchApp.fetch(exportUrl, {
+      headers: { 'Authorization': 'Bearer ' + token },
+      muteHttpExceptions: true
+    });
+    var blob = response.getBlob().setName(fileName);
 
     blobs.push(blob);
-    copy.setTrashed(true);
+    DriveApp.getFileById(ss.getId()).setTrashed(true);
   });
 
   return blobs;

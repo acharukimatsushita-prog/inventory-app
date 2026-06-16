@@ -81,7 +81,9 @@ export const exportOrderList = async (itemsToOrder, requesterName = '') => {
       // B列に連番(No.)を入れる
       sheet.getCell(`B${currentRow}`).value = index + 1;
       
-      const name = item.material && item.material !== '-' ? `${item.name} ${item.material}` : item.name;
+      const mat = (item.material && item.material !== '-') ? String(item.material).trim() : '';
+      const itemName = String(item.name || '').trim();
+      const name = (mat && mat !== itemName && !itemName.includes(mat)) ? `${itemName} ${mat}` : itemName;
       
       sheet.getCell(`C${currentRow}`).value = item.supplier || '';        // 発注先
       sheet.getCell(`D${currentRow}`).value = item.maker || '';           // メーカー
