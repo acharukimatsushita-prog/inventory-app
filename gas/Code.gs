@@ -498,9 +498,7 @@ function createOrderListExcel_(items) {
       var row  = 5 + i;
       var mat = (item.material && item.material !== '-') ? String(item.material).trim() : '';
       var itemName = String(item.name || '').trim();
-      var name = (mat && mat !== itemName && itemName.indexOf(mat) === -1)
-        ? itemName + ' ' + mat
-        : itemName;
+      var name = mat || itemName;
       ws.getRange(row, 2).setValue(i + 1);                            // B: No.
       ws.getRange(row, 3).setValue(item.supplier  || '');             // C: 発注先
       ws.getRange(row, 4).setValue(item.maker     || '');             // D: メーカー

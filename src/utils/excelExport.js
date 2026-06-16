@@ -83,11 +83,11 @@ export const exportOrderList = async (itemsToOrder, requesterName = '') => {
       
       const mat = (item.material && item.material !== '-') ? String(item.material).trim() : '';
       const itemName = String(item.name || '').trim();
-      const name = (mat && mat !== itemName && !itemName.includes(mat)) ? `${itemName} ${mat}` : itemName;
-      
+      const name = mat || itemName;
+
       sheet.getCell(`C${currentRow}`).value = item.supplier || '';        // 発注先
       sheet.getCell(`D${currentRow}`).value = item.maker || '';           // メーカー
-      sheet.getCell(`E${currentRow}`).value = name;                       // 名称
+      sheet.getCell(`E${currentRow}`).value = name;                       // 名称（第3階層）
       sheet.getCell(`F${currentRow}`).value = item.modelCode || '';       // 型式
       sheet.getCell(`H${currentRow}`).value = item.orderQuantity || 1;    // 数量
       sheet.getCell(`I${currentRow}`).value = item.remarks || '';         // 備考
