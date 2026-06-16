@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { exportOrderList } from './utils/excelExport';
+import { exportQrLabels } from './utils/qrBatchExport';
 import { QRCodeCanvas } from 'qrcode.react';
 import Webcam from 'react-webcam';
 import jsQR from 'jsqr';
@@ -547,6 +548,9 @@ function App() {
                 <button className="btn btn-secondary btn-success-outline" onClick={handleExportClick}>
                   <FileSpreadsheet size={18} /> <span className="btn-text">発注リスト出力</span>
                 </button>
+                <button className="btn btn-secondary" onClick={() => exportQrLabels(items)}>
+                  <QrCode size={18} /> <span className="btn-text">QR一括印刷</span>
+                </button>
                 <button className="btn btn-secondary" onClick={() => setIsOrderHistoryOpen(true)} title="直近の発注履歴">
                   <History size={18} /> <span className="btn-text">発注履歴</span>
                 </button>
@@ -555,9 +559,6 @@ function App() {
             )}
             <button className={`btn ${isAuditMode ? 'btn-danger' : 'btn-secondary'}`} onClick={toggleAuditMode}>
               <ListChecks size={18} /> <span className="btn-text">{isAuditMode ? '棚卸完了' : '棚卸'}</span>
-            </button>
-            <button className="btn btn-secondary" onClick={() => setIsValueSummaryOpen(true)} title="在庫金額を確認">
-              <Calculator size={18} /> <span className="btn-text">金額集計</span>
             </button>
             <button className="btn btn-secondary" onClick={toggleTheme} title={theme === 'dark' ? 'ライトモードに切替' : 'ダークモードに切替'}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -684,9 +685,14 @@ function App() {
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{selectedFilter.subcategory || selectedFilter.category || '全部材'} <span style={{ fontWeight: 'normal', color: 'var(--text-secondary)', fontSize: '1rem' }}>({filteredItems.length})</span></h2>
                 {isAuditMode && (
-                  <button className="btn btn-primary" onClick={handleSaveAudit} style={{ background: 'var(--success-color)', padding: '0.4rem 1rem' }}>
-                    <CheckCircle2 size={16} /> 在庫数を確定
-                  </button>
+                  <>
+                    <button className="btn btn-primary" onClick={handleSaveAudit} style={{ background: 'var(--success-color)', padding: '0.4rem 1rem' }}>
+                      <CheckCircle2 size={16} /> 在庫数を確定
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => setIsValueSummaryOpen(true)} title="在庫金額を確認" style={{ padding: '0.4rem 1rem' }}>
+                      <Calculator size={16} /> 金額集計
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -1297,6 +1303,9 @@ function QrScannerModal({ items, onClose, onSelectCandidate }) {
 
 // === QR印刷・保存用モーダル ===
 function QrPrintModal({ item, onClose }) {
+  const qrSizeMm = 16;
+  const qrCanvasSize = 300;
+
   const handlePrint = () => {
     const canvas = document.getElementById('qr-canvas');
     if (canvas) {
@@ -1305,17 +1314,29 @@ function QrPrintModal({ item, onClose }) {
       if (win) {
         win.document.write(`
           <html>
-            <head><title>QRコード印刷</title></head>
-            <body style="text-align:center; padding: 40px; font-family: sans-serif;">
-              <h2 style="margin-bottom: 10px;">${item.name}</h2>
-              <p style="color: #666; margin-top: 0;">${item.size !== '-' ? item.size : ''} ${item.length !== '-' ? `x ${item.length}mm` : ''}</p>
-              <img src="${pngUrl}" style="width: 250px; height: 250px; margin-top: 20px;" />
+            <head>
+              <title>QRコード印刷</title>
+              <style>
+                @page { size: 18mm 50mm; margin: 0; }
+                body { margin: 0; padding: 0; font-family: sans-serif; }
+                .label { display: flex; flex-direction: column; align-items: center; width: 18mm; height: 50mm; overflow: hidden; padding: 1mm; box-sizing: border-box; }
+                .qr img { width: 16mm; height: 16mm; }
+                .text { width: 100%; text-align: center; margin-top: 1mm; }
+                .name { font-weight: bold; font-size: 7pt; line-height: 1.3; word-break: break-all; }
+                .detail { font-size: 6pt; line-height: 1.3; color: #333; }
+              </style>
+            </head>
+            <body>
+              <div class="label">
+                <div class="qr"><img src="${pngUrl}" /></div>
+                <div class="text">
+                  <div class="name">${item.name}</div>
+                  ${item.size !== '-' ? `<div class="detail">${item.size}</div>` : ''}
+                  ${item.length !== '-' ? `<div class="detail">${item.length}mm</div>` : ''}
+                </div>
+              </div>
               <script>
-                window.onload = function() { 
-                  setTimeout(function() {
-                    window.print();
-                  }, 200);
-                }
+                window.onload = function() { setTimeout(function() { window.print(); }, 200); }
               </script>
             </body>
           </html>
@@ -1347,10 +1368,20 @@ function QrPrintModal({ item, onClose }) {
       <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ padding: '2rem', maxWidth: '400px', textAlign: 'center' }}>
         <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>QRコードの発行</h3>
 
-        <div className="print-area" style={{ background: '#fff', padding: '20px', borderRadius: '12px', color: '#000', display: 'inline-block' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.5rem' }}>{item.name}</div>
-          <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>{item.size !== '-' ? item.size : ''} {item.length !== '-' ? `x ${item.length}mm` : ''}</div>
-          <QRCodeCanvas id="qr-canvas" value={item.id} size={200} level="M" includeMargin={true} />
+        <div className="print-area" style={{ background: '#fff', borderRadius: '8px', color: '#000', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', width: '18mm', height: '50mm', overflow: 'hidden', padding: '1mm', boxSizing: 'border-box' }}>
+          <QRCodeCanvas
+            id="qr-canvas"
+            value={item.id}
+            size={qrCanvasSize}
+            level="M"
+            includeMargin={true}
+            style={{ width: `${qrSizeMm}mm`, height: `${qrSizeMm}mm`, flexShrink: 0 }}
+          />
+          <div style={{ width: '100%', textAlign: 'center', marginTop: '1mm' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '7pt', lineHeight: 1.3, wordBreak: 'break-all' }}>{item.name}</div>
+            {item.size !== '-' && <div style={{ fontSize: '6pt', lineHeight: 1.3, color: '#333' }}>{item.size}</div>}
+            {item.length !== '-' && <div style={{ fontSize: '6pt', lineHeight: 1.3, color: '#333' }}>{item.length}mm</div>}
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '2rem' }}>

@@ -1471,6 +1471,10 @@ tr:hover .sticky-col,
     border: none;
     background: transparent;
   }
+  .print-area canvas {
+    width: 30mm !important;
+    height: 30mm !important;
+  }
   .no-print {
     display: none !important;
   }
