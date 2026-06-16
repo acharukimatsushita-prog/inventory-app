@@ -233,9 +233,13 @@ export function useInventory(gasUrl) {
   };
 
   const updateItem = (id, updatedFields) => {
-    const updated = normalizeItem({ ...updatedFields, id, updatedAt: new Date().toISOString() }, 0).item;
-    setItems(prev => prev.map(item => item.id === id ? normalizeItem({ ...item, ...updatedFields, id }, 0).item : item));
-    syncToGas('update', updated);
+    let updatedItem;
+    setItems(prev => {
+      const existing = prev.find(item => item.id === id) || {};
+      updatedItem = normalizeItem({ ...existing, ...updatedFields, id, updatedAt: new Date().toISOString() }, 0).item;
+      return prev.map(item => item.id === id ? updatedItem : item);
+    });
+    syncToGas('update', updatedItem);
   };
 
   const deleteItem = (id) => {

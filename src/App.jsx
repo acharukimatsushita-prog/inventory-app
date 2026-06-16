@@ -307,9 +307,8 @@ function App() {
         if (!searchableText.includes(query)) return false;
       }
       if (showOnlyLowStock) {
-        const qty = Number(item.quantity || 0);
-        const min = Number(item.minLot || 0);
-        if (qty > min) return false;
+        const state = getStockState(item);
+        if (state !== 'low' && state !== 'empty') return false;
       }
       return true;
     }).sort((a, b) => nat(a.name, b.name) || nat(a.material, b.material) || nat(a.size, b.size));

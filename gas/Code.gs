@@ -305,11 +305,14 @@ function findRow_(sheet, payload) {
   const values = getTableValues_(sheet);
   const headers = values.headers;
   const indexes = getIndexes_(headers);
-  if (payload._rowIndex && Number(payload._rowIndex) >= 2) return Number(payload._rowIndex);
-  if (!payload.id || indexes.id === undefined) return null;
-  for (let i = 0; i < values.rows.length; i++) {
-    if (String(values.rows[i][indexes.id]||'') === String(payload.id)) return i + 2;
+  // IDが存在する場合はID検索を優先（_rowIndexより確実）
+  if (payload.id && indexes.id !== undefined) {
+    for (let i = 0; i < values.rows.length; i++) {
+      if (String(values.rows[i][indexes.id]||'') === String(payload.id)) return i + 2;
+    }
   }
+  // IDで見つからない場合のみ_rowIndexにフォールバック
+  if (!payload.id && payload._rowIndex && Number(payload._rowIndex) >= 2) return Number(payload._rowIndex);
   return null;
 }
 
