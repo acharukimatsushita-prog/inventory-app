@@ -75,11 +75,11 @@ export async function exportQrLabels(items) {
     const txtCell = ws.getRow(excelRow).getCell(txtCol);
     txtCell.value = {
       richText: [
-        { text: item.name + '\n', font: { bold: true, size: 9 } },
-        ...(details ? [{ text: details, font: { bold: true, size: 13 } }] : []),
+        { text: item.name + '\n', font: { bold: true, size: 8 } },
+        ...(details ? [{ text: details, font: { bold: true, size: 18 } }] : []),
       ],
     };
-    txtCell.alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
+    txtCell.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
     txtCell.border = {
       top:    { style: 'thin' },
       right:  { style: 'thin' },

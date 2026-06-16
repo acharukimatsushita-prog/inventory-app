@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const ITEM_DEFAULTS = {
   category: '未分類',
@@ -163,6 +163,7 @@ export function useInventory(gasUrl) {
   const [batchProgress, setBatchProgress] = useState({ isRunning: false, current: 0, total: 0 });
   const [syncStatus, setSyncStatus] = useState({ state: 'idle', message: '待機中' });
   const [dataQuality, setDataQuality] = useState({ total: 0, repaired: 0, missingIds: 0 });
+  const fetchItemsRef = useRef(null);
 
   // GASへのデータ送信（バックグラウンド処理）
   const syncToGas = useCallback(async (action, payload, options = {}) => {
@@ -216,6 +217,8 @@ export function useInventory(gasUrl) {
       setLoading(false);
     }
   }, [gasUrl, syncToGas]);
+
+  fetchItemsRef.current = fetchItems;
 
   // 初回データ取得
   useEffect(() => {

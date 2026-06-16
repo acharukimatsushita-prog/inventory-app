@@ -215,6 +215,15 @@ function App() {
       updateItem(editingItem.id, formData);
       pushToast('部材情報を更新しました', { type: 'success' });
     } else {
+      const dupKeys = ['category', 'name', 'material', 'size', 'length', 'unit', 'supplier', 'maker', 'modelCode'];
+      const norm = v => String(v || '').trim().toLowerCase();
+      const isDup = items.some(item =>
+        dupKeys.every(k => norm(item[k]) === norm(formData[k]))
+      );
+      if (isDup) {
+        alert('同じ内容の部材がすでに登録されています。');
+        return;
+      }
       addItem(formData);
       pushToast('新しい部材を登録しました', { type: 'success' });
     }
@@ -288,6 +297,7 @@ function App() {
   }), [items]);
 
   const filteredItems = useMemo(() => {
+    const nat = (a, b) => String(a || '').localeCompare(String(b || ''), 'ja', { numeric: true, sensitivity: 'base' });
     return items.filter(item => {
       const itemCategory = item.category || '未分類';
       const itemName = item.name;
@@ -318,7 +328,7 @@ function App() {
         if (qty > min) return false;
       }
       return true;
-    });
+    }).sort((a, b) => nat(a.name, b.name) || nat(a.material, b.material) || nat(a.size, b.size));
   }, [items, searchQuery, selectedFilter, showOnlyLowStock]);
 
   const toggleCategory = (cat) => {
