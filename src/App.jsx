@@ -558,7 +558,7 @@ function App() {
                 <button className="btn btn-secondary btn-success-outline" onClick={handleExportClick}>
                   <FileSpreadsheet size={18} /> <span className="btn-text">発注リスト出力</span>
                 </button>
-                <button className="btn btn-secondary" onClick={() => exportQrLabels(items)}>
+                <button className="btn btn-secondary" onClick={() => exportQrLabels(items, gasUrl)}>
                   <QrCode size={18} /> <span className="btn-text">QR一括印刷</span>
                 </button>
                 <button className="btn btn-secondary" onClick={() => setIsOrderHistoryOpen(true)} title="直近の発注履歴">
@@ -943,6 +943,7 @@ function App() {
       {qrPrintItem && (
         <QrPrintModal
           item={qrPrintItem}
+          gasUrl={gasUrl}
           onClose={() => setQrPrintItem(null)}
         />
       )}
@@ -1309,9 +1310,10 @@ function QrScannerModal({ items, onClose, onSelectCandidate }) {
 }
 
 // === QR印刷・保存用モーダル ===
-function QrPrintModal({ item, onClose }) {
+function QrPrintModal({ item, onClose, gasUrl }) {
   const qrSizeMm = 16;
   const qrCanvasSize = 300;
+  const qrValue = gasUrl ? `${gasUrl}?id=${item.id}` : item.id;
 
   const handlePrint = () => {
     const canvas = document.getElementById('qr-canvas');
@@ -1378,9 +1380,9 @@ function QrPrintModal({ item, onClose }) {
         <div className="print-area" style={{ background: '#fff', borderRadius: '8px', color: '#000', display: 'inline-flex', flexDirection: 'row', alignItems: 'center', width: '60mm', height: '18mm', overflow: 'hidden', padding: '1mm', boxSizing: 'border-box' }}>
           <QRCodeCanvas
             id="qr-canvas"
-            value={item.id}
+            value={qrValue}
             size={qrCanvasSize}
-            level="M"
+            level="L"
             includeMargin={true}
             style={{ width: `${qrSizeMm}mm`, height: `${qrSizeMm}mm`, flexShrink: 0 }}
           />

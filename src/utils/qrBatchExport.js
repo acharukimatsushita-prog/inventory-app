@@ -6,7 +6,7 @@ import QRCode from 'qrcode';
 // QR列(16mm) + テキスト列(44mm) の2列構成
 // A4(200mm usable) ÷ 60mm = 3ラベル/行
 
-export async function exportQrLabels(items) {
+export async function exportQrLabels(items, gasUrl) {
   if (!items || items.length === 0) {
     alert('登録されている部材がありません。');
     return;
@@ -48,8 +48,9 @@ export async function exportQrLabels(items) {
     ws.getRow(excelRow).height = ROW_H;
 
     // QR画像生成・配置
-    const qrDataUrl = await QRCode.toDataURL(item.id, {
-      width: 160, margin: 1, errorCorrectionLevel: 'M',
+    const qrValue = gasUrl ? `${gasUrl}?id=${item.id}` : item.id;
+    const qrDataUrl = await QRCode.toDataURL(qrValue, {
+      width: 160, margin: 1, errorCorrectionLevel: 'L',
     });
     const base64  = qrDataUrl.split(',')[1];
     const imageId = workbook.addImage({ base64, extension: 'png' });

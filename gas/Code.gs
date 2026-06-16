@@ -399,3 +399,123 @@ function json_(value, callback) {
   const mimeType = callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON;
   return ContentService.createTextOutput(output).setMimeType(mimeType);
 }
+
+// ===== 発注点以下 メール通知 =====
+function checkLowStockAndNotify() {
+  var props = PropertiesService.getScriptProperties();
+  var email = props.getProperty('NOTIFY_EMAIL');
+  if (!email) {
+    Logger.log('通知先メールが未設定です。setNotifyEmail() を実行してください。');
+    return;
+  }
+
+  var sheet = getSheet_();
+  var items = readItems_(sheet);
+
+  var lowStock = items.filter(function(item) {
+    var qty = Number(item.quantity || 0);
+    var min = Number(item.minLot || 0);
+    return min > 0 && qty <= min;
+  });
+
+  if (lowStock.length === 0) {
+    Logger.log('発注点以下の部材はありません。');
+    return;
+  }
+
+  var lines = lowStock.map(function(item) {
+    var name = [item.name, item.material, item.size].filter(function(v){return v && v !== '-';}).join(' ');
+    return '・' + name + '\n  現在庫: ' + item.quantity + item.unit + '　発注点: ' + item.minLot + item.unit + '　発注数: ' + (item.orderQuantity || 1) + item.unit;
+  });
+
+  var subject = '【在庫管理】発注点以下の部材が ' + lowStock.length + ' 件あります';
+  var body =
+    '以下の部材が発注点以下になっています。\n\n' +
+    lines.join('\n\n') +
+    '\n\n発注リスト（Excel）を添付しています。\n\n---\nFA部材在庫管理システム';
+
+  var blobs = createOrderListExcel_(lowStock);
+
+  var mailOptions = { to: email, subject: subject, body: body };
+  if (blobs.length > 0) mailOptions.attachments = blobs;
+
+  MailApp.sendEmail(mailOptions);
+  Logger.log('通知メール送信完了: ' + lowStock.length + '件 / Excel添付: ' + blobs.length + 'ファイル');
+}
+
+function createOrderListExcel_(items) {
+  var files = DriveApp.getFilesByName('template.xlsx');
+  if (!files.hasNext()) {
+    Logger.log('template.xlsx がマイドライブに見つかりません。ac.seizo.team@gmail.com のマイドライブにアップロードしてください。');
+    return [];
+  }
+  var templateFile = files.next();
+  var today    = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd');
+  var dateLabel = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy.MM.dd');
+
+  // 工番＋案件名でグループ化（excelExport.js と同じキー）
+  var groups = {};
+  items.forEach(function(item) {
+    var pNum  = item.projectNumber || '未設定工番';
+    var pName = item.projectName   || '未設定案件';
+    var key = pNum + '_' + pName;
+    if (!groups[key]) groups[key] = { projectNumber: pNum, projectName: pName, rows: [] };
+    groups[key].rows.push(item);
+  });
+
+  var blobs = [];
+  Object.keys(groups).forEach(function(key) {
+    var g = groups[key];
+
+    // テンプレートをコピーして開く
+    var copy = templateFile.makeCopy('_発注リスト_tmp_' + key);
+    var ss = SpreadsheetApp.open(copy);
+    var ws = ss.getSheets()[0];
+    ws.setName(dateLabel);
+
+    // ヘッダー（B3=工番, D3=案件名）
+    ws.getRange('B3').setValue(g.projectNumber !== '未設定工番' ? g.projectNumber : '');
+    ws.getRange('D3').setValue(g.projectName   !== '未設定案件' ? g.projectName   : '');
+
+    // 既存データクリア（5〜30行目、B〜N列）
+    ws.getRange(5, 2, 26, 13).clearContent();
+
+    // データ行（excelExport.js と同じ列配置）
+    g.rows.forEach(function(item, i) {
+      var row  = 5 + i;
+      var name = item.material && item.material !== '-'
+        ? item.name + ' ' + item.material
+        : item.name;
+      ws.getRange(row, 2).setValue(i + 1);                            // B: No.
+      ws.getRange(row, 3).setValue(item.supplier  || '');             // C: 発注先
+      ws.getRange(row, 4).setValue(item.maker     || '');             // D: メーカー
+      ws.getRange(row, 5).setValue(name           || '');             // E: 名称
+      ws.getRange(row, 6).setValue(item.modelCode || '');             // F: 型式
+      ws.getRange(row, 8).setValue(Number(item.orderQuantity) || 1);  // H: 数量
+      ws.getRange(row, 9).setValue(item.remarks   || '');             // I: 備考
+    });
+
+    SpreadsheetApp.flush();
+
+    // .xlsx として取得
+    var safeNum  = g.projectNumber.replace(/[\\/:*?"<>|]/g, '_');
+    var safeName = g.projectName.replace(/[\\/:*?"<>|]/g, '_');
+    var fileName = '発注書_' + safeNum + '_' + safeName + '_' + today + '.xlsx';
+
+    var blob = DriveApp.getFileById(ss.getId())
+      .getAs('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .setName(fileName);
+
+    blobs.push(blob);
+    copy.setTrashed(true);
+  });
+
+  return blobs;
+}
+
+function setNotifyEmail() {
+  var email = 'h-matsushita@asia-create.jp,ac.seizo.team@gmail.com,y-hishida@asia-create.jp,y-hayashi@asia-create.jp,otsubo@asia-create.jp';
+  PropertiesService.getScriptProperties().setProperty('NOTIFY_EMAIL', email);
+  Logger.log('通知先を設定しました: ' + email);
+}
+// ==========================================
