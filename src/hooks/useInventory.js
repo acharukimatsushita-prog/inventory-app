@@ -183,9 +183,9 @@ export function useInventory(gasUrl) {
     }
   }, [gasUrl]);
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (options = {}) => {
     if (!gasUrl) return;
-    setLoading(true);
+    if (!options.silent) setLoading(true);
     try {
       let data;
       try {
@@ -199,7 +199,7 @@ export function useInventory(gasUrl) {
       setItems(normalized.items);
       setDataQuality(normalized.summary);
 
-      if (normalized.summary.repaired > 0) {
+      if (!options.silent && normalized.summary.repaired > 0) {
         setSyncStatus({
           state: 'saving',
           message: `スプレッドシート入力の不足項目を${normalized.summary.repaired}件補完中...`
@@ -211,10 +211,12 @@ export function useInventory(gasUrl) {
         });
       }
     } catch (e) {
-      console.error('Failed to fetch from GAS', e);
-      setSyncStatus({ state: 'error', message: 'データ取得に失敗しました' });
+      if (!options.silent) {
+        console.error('Failed to fetch from GAS', e);
+        setSyncStatus({ state: 'error', message: 'データ取得に失敗しました' });
+      }
     } finally {
-      setLoading(false);
+      if (!options.silent) setLoading(false);
     }
   }, [gasUrl, syncToGas]);
 
@@ -225,6 +227,17 @@ export function useInventory(gasUrl) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchItems();
   }, [fetchItems]);
+
+  // 60分ごとに自動同期（タブが表示中のみ）
+  useEffect(() => {
+    if (!gasUrl) return;
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchItemsRef.current({ silent: true });
+      }
+    }, 60 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [gasUrl]);
 
   const addItem = (item) => {
     const newItem = normalizeItem({ ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() }, 0).item;
