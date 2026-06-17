@@ -70,14 +70,14 @@ export async function exportQrLabels(items, gasUrl) {
     // テキスト列（名称 + 規格・仕様）
     const details = [
       item.size   && item.size   !== '-' ? item.size   : '',
-      item.length && item.length !== '-' ? item.length + 'mm' : '',
+      item.length && item.length !== '-' ? item.length : '',
     ].filter(Boolean).join('　');
 
     const txtCell = ws.getRow(excelRow).getCell(txtCol);
     txtCell.value = {
       richText: [
         { text: item.name + '\n', font: { bold: true, size: 8 } },
-        ...(details ? [{ text: details, font: { bold: true, size: 18 } }] : []),
+        ...(details ? [{ text: details, font: { bold: true, size: 11 } }] : []),
       ],
     };
     txtCell.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
