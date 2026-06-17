@@ -77,7 +77,7 @@ export async function exportQrLabels(items, gasUrl) {
     txtCell.value = {
       richText: [
         { text: item.name + '\n', font: { bold: true, size: 8 } },
-        ...(details ? [{ text: details, font: { bold: true, size: 11 } }] : []),
+        ...(details ? [{ text: details, font: { bold: true, size: 14 } }] : []),
       ],
     };
     txtCell.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
