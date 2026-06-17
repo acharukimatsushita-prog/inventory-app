@@ -227,7 +227,7 @@ function serveItemPage_(sheet, itemId) {
   }
   var details = [
     item.size && item.size !== '-' ? item.size : '',
-    item.length && item.length !== '-' ? item.length + 'mm' : ''
+    item.length && item.length !== '-' ? item.length : ''
   ].filter(function(v){return v;}).join(' ');
 
   var html =

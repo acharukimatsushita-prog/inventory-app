@@ -1329,7 +1329,7 @@ function QrPrintModal({ item, onClose, gasUrl }) {
                 <div class="qr"><img src="${pngUrl}" /></div>
                 <div class="text">
                   <div class="name">${item.name}</div>
-                  ${((item.size && item.size !== '-') || (item.length && item.length !== '-')) ? `<div class="detail">${[item.size && item.size !== '-' ? item.size : '', item.length && item.length !== '-' ? item.length + 'mm' : ''].filter(Boolean).join('　')}</div>` : ''}
+                  ${((item.size && item.size !== '-') || (item.length && item.length !== '-')) ? `<div class="detail">${[item.size && item.size !== '-' ? item.size : '', item.length && item.length !== '-' ? item.length : ''].filter(Boolean).join('　')}</div>` : ''}
                 </div>
               </div>
 
@@ -1379,7 +1379,7 @@ function QrPrintModal({ item, onClose, gasUrl }) {
             <div style={{ fontWeight: 'bold', fontSize: '11pt', lineHeight: 1.3, wordBreak: 'break-all' }}>{item.name}</div>
             {((item.size && item.size !== '-') || (item.length && item.length !== '-')) && (
               <div style={{ fontWeight: 'bold', fontSize: '13pt', lineHeight: 1.3, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {[item.size && item.size !== '-' ? item.size : '', item.length && item.length !== '-' ? item.length + 'mm' : ''].filter(Boolean).join('　')}
+                {[item.size && item.size !== '-' ? item.size : '', item.length && item.length !== '-' ? item.length : ''].filter(Boolean).join('　')}
               </div>
             )}
           </div>
