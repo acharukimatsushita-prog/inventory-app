@@ -151,14 +151,12 @@ function addItem_(sheet, payload) {
 function updateItem_(sheet, payload) {
   const item = normalizeItem_(payload);
   const row = findRow_(sheet, item);
-  item.id = item.id || Utilities.getUuid();
-  item.updatedAt = item.updatedAt || new Date().toISOString();
-  if (row) {
-    writeItemToRow_(sheet, row, item);
-  } else {
-    item.createdAt = item.createdAt || new Date().toISOString();
-    writeItemToRow_(sheet, sheet.getLastRow() + 1, item);
+  if (!row) {
+    Logger.log('updateItem_: 行が見つかりません。id=' + item.id);
+    return;
   }
+  item.updatedAt = item.updatedAt || new Date().toISOString();
+  writeItemToRow_(sheet, row, item);
 }
 
 function deleteItem_(sheet, payload) {
