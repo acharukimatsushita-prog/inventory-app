@@ -67,20 +67,27 @@ export async function exportQrLabels(items, gasUrl) {
       bottom: { style: 'thin' },
     };
 
-    // テキスト列（名称 + 規格・仕様）
-    const details = [
-      item.size   && item.size   !== '-' ? item.size   : '',
-      item.length && item.length !== '-' ? item.length : '',
-    ].filter(Boolean).join('　');
+    // テキスト列（上：部材名+仕様詳細 小文字、下：規格・サイズ 大文字）
+    const hasSize   = item.size   && item.size   !== '-';
+    const hasLength = item.length && item.length !== '-';
+
+    let topText, largeText;
+    if (hasSize) {
+      topText   = [item.name, hasLength ? item.length : ''].filter(Boolean).join('　');
+      largeText = item.size;
+    } else {
+      topText   = item.name;
+      largeText = hasLength ? item.length : '';
+    }
+
+    const richText = [];
+    if (topText)   richText.push({ text: topText + '\n', font: { bold: true, size: 7 } });
+    if (largeText) richText.push({ text: largeText,      font: { bold: true, size: 20 } });
+    if (richText.length === 0) richText.push({ text: item.name, font: { bold: true, size: 12 } });
 
     const txtCell = ws.getRow(excelRow).getCell(txtCol);
-    txtCell.value = {
-      richText: [
-        { text: item.name + '\n', font: { bold: true, size: 8 } },
-        ...(details ? [{ text: details, font: { bold: true, size: 14 } }] : []),
-      ],
-    };
-    txtCell.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
+    txtCell.value = { richText };
+    txtCell.alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
     txtCell.border = {
       top:    { style: 'thin' },
       right:  { style: 'thin' },
