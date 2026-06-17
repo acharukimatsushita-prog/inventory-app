@@ -559,9 +559,6 @@ function App() {
             <button className="btn btn-secondary" onClick={() => setIsSettingsOpen(true)}>
               <Settings size={18} /> <span className="btn-text">設定</span>
             </button>
-            <button className="btn btn-primary btn-add" onClick={() => { setEditingItem(null); setIsItemModalOpen(true); }}>
-              <Plus size={18} /> 新規登録
-            </button>
           </div>
         </div>
       </header>
@@ -688,6 +685,9 @@ function App() {
                   </>
                 )}
               </div>
+              <button className="btn btn-primary btn-add" onClick={() => { setEditingItem(null); setIsItemModalOpen(true); }}>
+                <Plus size={18} /> 新規登録
+              </button>
             </div>
 
             <div className="table-container">
