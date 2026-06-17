@@ -1326,24 +1326,34 @@ function QrPrintModal({ item, onClose, gasUrl }) {
       <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ padding: '2rem', maxWidth: '400px', textAlign: 'center' }}>
         <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>QRコードの発行</h3>
 
-        <div className="print-area" style={{ background: '#fff', borderRadius: '8px', color: '#000', display: 'inline-flex', flexDirection: 'row', alignItems: 'center', width: '60mm', height: '18mm', overflow: 'hidden', padding: '1mm', boxSizing: 'border-box' }}>
-          <QRCodeCanvas
-            id="qr-canvas"
-            value={qrValue}
-            size={qrCanvasSize}
-            level="L"
-            includeMargin={true}
-            style={{ width: `${qrSizeMm}mm`, height: `${qrSizeMm}mm`, flexShrink: 0 }}
-          />
-          <div style={{ flex: 1, paddingLeft: '2mm', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '11pt', lineHeight: 1.3, wordBreak: 'break-all' }}>{item.name}</div>
-            {((item.size && item.size !== '-') || (item.length && item.length !== '-')) && (
-              <div style={{ fontWeight: 'bold', fontSize: '13pt', lineHeight: 1.3, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {[item.size && item.size !== '-' ? item.size : '', item.length && item.length !== '-' ? item.length : ''].filter(Boolean).join('　')}
+        {(() => {
+          const hasSize   = item.size   && item.size   !== '-';
+          const hasLength = item.length && item.length !== '-';
+          const topText   = hasSize
+            ? [item.name, hasLength ? item.length : ''].filter(Boolean).join('　')
+            : item.name;
+          const largeText = hasSize ? item.size : (hasLength ? item.length : '');
+          return (
+            <div className="print-area" style={{ background: '#fff', borderRadius: '8px', color: '#000', display: 'inline-flex', flexDirection: 'row', alignItems: 'stretch', width: '60mm', height: '21mm', overflow: 'hidden', padding: '1mm', boxSizing: 'border-box' }}>
+              <QRCodeCanvas
+                id="qr-canvas"
+                value={qrValue}
+                size={qrCanvasSize}
+                level="L"
+                includeMargin={true}
+                style={{ width: `${qrSizeMm}mm`, height: `${qrSizeMm}mm`, flexShrink: 0, alignSelf: 'center' }}
+              />
+              <div style={{ flex: 1, paddingLeft: '2mm', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '7pt', lineHeight: 1.3, color: '#000', wordBreak: 'break-all' }}>{topText}</div>
+                {largeText && (
+                  <div style={{ fontWeight: 'bold', fontSize: '20pt', lineHeight: 1.2, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {largeText}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          );
+        })()}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '2rem' }}>
           <button className="btn btn-primary" onClick={handlePrint}>
