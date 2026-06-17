@@ -1305,47 +1305,7 @@ function QrPrintModal({ item, onClose, gasUrl }) {
   const qrValue = gasUrl ? `${gasUrl}?id=${item.id}` : item.id;
 
   const handlePrint = () => {
-    const canvas = document.getElementById('qr-canvas');
-    if (canvas) {
-      const pngUrl = canvas.toDataURL('image/png');
-      const win = window.open('', '_blank');
-      if (win) {
-        win.document.write(`
-          <html>
-            <head>
-              <title>QRコード印刷</title>
-              <style>
-                @page { size: 60mm 18mm; margin: 0; }
-                body { margin: 0; padding: 0; font-family: sans-serif; }
-                .label { display: flex; flex-direction: row; align-items: center; width: 60mm; height: 18mm; overflow: hidden; padding: 1mm; box-sizing: border-box; }
-                .qr img { width: 16mm; height: 16mm; flex-shrink: 0; }
-                .text { flex: 1; padding-left: 2mm; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
-                .name { font-weight: bold; font-size: 11pt; line-height: 1.3; word-break: break-all; }
-                .detail { font-weight: bold; font-size: 13pt; line-height: 1.3; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-              </style>
-            </head>
-            <body>
-              <div class="label">
-                <div class="qr"><img src="${pngUrl}" /></div>
-                <div class="text">
-                  <div class="name">${item.name}</div>
-                  ${((item.size && item.size !== '-') || (item.length && item.length !== '-')) ? `<div class="detail">${[item.size && item.size !== '-' ? item.size : '', item.length && item.length !== '-' ? item.length : ''].filter(Boolean).join('　')}</div>` : ''}
-                </div>
-              </div>
-
-              <script>
-                window.onload = function() { setTimeout(function() { window.print(); }, 200); }
-              </script>
-            </body>
-          </html>
-        `);
-        win.document.close();
-      } else {
-        window.print();
-      }
-    } else {
-      window.print();
-    }
+    exportQrLabels([item], gasUrl);
   };
 
   const handleDownload = () => {
@@ -1388,7 +1348,7 @@ function QrPrintModal({ item, onClose, gasUrl }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '2rem' }}>
           <button className="btn btn-primary" onClick={handlePrint}>
             <Printer size={18} />
-            紙に印刷する（PC向け）
+            Excelで出力して印刷
           </button>
           <button className="btn btn-secondary" onClick={handleDownload} style={{ color: 'var(--success-color)', borderColor: 'var(--success-color)' }}>
             <Download size={18} />
