@@ -28,8 +28,7 @@ export async function exportQrLabels(items, gasUrl) {
   const LABELS_PER_ROW = 3;   // A4横に3ラベル
   const QR_COL_W  = 7.9;      // ~16mm
   const TXT_COL_W = 23.0;     // ~44mm
-  const ROW_H     = 51;       // 18mm in pt
-  const QR_PX     = 61;       // 16mm at 96dpi
+  const ROW_H     = 60;       // ~21mm in pt
 
   // 列幅設定（QR列・テキスト列を交互に3セット = 6列）
   for (let label = 0; label < LABELS_PER_ROW; label++) {
@@ -56,8 +55,7 @@ export async function exportQrLabels(items, gasUrl) {
     const imageId = workbook.addImage({ base64, extension: 'png' });
     ws.addImage(imageId, {
       tl: { col: qrCol - 1, row: excelRow - 1 },
-      ext: { width: QR_PX, height: QR_PX },
-      editAs: 'oneCell',
+      br: { col: qrCol,     row: excelRow },
     });
 
     // QR列の罫線（上・左・下）
