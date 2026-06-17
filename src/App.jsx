@@ -1590,7 +1590,7 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
   const nameOptions = uniqueSorted([...currentNames, ...(inputOptions?.names || [])]);
 
   return (
-    <div className="modal-overlay modal-overlay-top no-print" onClick={onClose} style={{ zIndex: 1000 }}>
+    <div className="modal-overlay modal-overlay-top no-print" style={{ zIndex: 1000 }}>
       <div className="modal-content glass-panel item-modal" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown} style={{ padding: '2rem', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
         <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
           {isEdit ? '部材情報の編集' : (isDuplicate ? '部材を複製して登録' : '新規部材の登録')}
