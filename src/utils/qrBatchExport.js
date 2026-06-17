@@ -29,6 +29,7 @@ export async function exportQrLabels(items, gasUrl) {
   const QR_COL_W  = 7.9;      // ~16mm
   const TXT_COL_W = 23.0;     // ~44mm
   const ROW_H     = 60;       // ~21mm in pt
+  const GAP_H     = 14;       // ラベル行間の余白（~5mm）
 
   // 列幅設定（QR列・テキスト列を交互に3セット = 6列）
   for (let label = 0; label < LABELS_PER_ROW; label++) {
@@ -40,11 +41,12 @@ export async function exportQrLabels(items, gasUrl) {
     const item      = items[i];
     const labelRow  = Math.floor(i / LABELS_PER_ROW);
     const labelCol  = i % LABELS_PER_ROW;
-    const excelRow  = labelRow + 1;
+    const excelRow  = labelRow * 2 + 1;   // 奇数行をラベル行に（1,3,5...）
     const qrCol     = labelCol * 2 + 1;   // 1,3,5
     const txtCol    = labelCol * 2 + 2;   // 2,4,6
 
     ws.getRow(excelRow).height = ROW_H;
+    ws.getRow(excelRow + 1).height = GAP_H;  // ラベル行の直下に余白行
 
     // QR画像生成・配置
     const qrValue = gasUrl ? `${gasUrl}?id=${item.id}` : item.id;
