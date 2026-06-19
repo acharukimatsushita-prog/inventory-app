@@ -378,29 +378,32 @@ function App() {
     if (requester.trim()) localStorage.setItem('last_requester', requester);
     try {
       await exportOrderList(targetItems, requester);
-      const previousItems = targetItems.map(item => ({ ...item }));
-      setLastExportedOrderItems(previousItems);
+      setLastExportedOrderItems(targetItems.map(item => ({ ...item })));
       setIsOrderPreviewOpen(false);
-
-      // 出力と同時に自動で発注済みにする
-      const updates = targetItems.map(item => ({
-        id: item.id,
-        isOrdered: true,
-        orderedBy: requester,
-        orderedAt: new Date().toISOString()
-      }));
-      await batchUpdateItems(updates);
-      pushToast(`発注リストを出力し、${updates.length}件を発注済みにしました`, {
-        type: 'success',
-        actionLabel: '元に戻す',
-        onAction: () => {
-          previousItems.forEach(item => updateItem(item.id, item));
-          pushToast('発注済みの変更を戻しました', { type: 'info' });
-        }
-      });
+      setShowOrderSuccessModal(true);
     } catch (e) {
       setExportError('エクセル出力エラー: ' + e.message);
     }
+  };
+
+  const handleMarkAsOrdered = async () => {
+    setShowOrderSuccessModal(false);
+    const previousItems = lastExportedOrderItems;
+    const updates = previousItems.map(item => ({
+      id: item.id,
+      isOrdered: true,
+      orderedBy: exportRequester,
+      orderedAt: new Date().toISOString()
+    }));
+    await batchUpdateItems(updates);
+    pushToast(`${updates.length}件を発注済みにしました`, {
+      type: 'success',
+      actionLabel: '元に戻す',
+      onAction: () => {
+        previousItems.forEach(item => updateItem(item.id, item));
+        pushToast('発注済みの変更を戻しました', { type: 'info' });
+      }
+    });
   };
 
   const toggleOrderSelection = (id) => {
@@ -904,6 +907,26 @@ function App() {
           gasUrl={gasUrl}
           onClose={() => setQrPrintItem(null)}
         />
+      )}
+
+      {canUseOrderUi && showOrderSuccessModal && (
+        <div className="modal-overlay" style={{ zIndex: 3000 }}>
+          <div className="modal-content glass-panel" style={{ maxWidth: '400px', padding: '2rem', textAlign: 'center' }}>
+            <CheckCircle2 size={48} color="var(--success-color)" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ margin: '0 0 0.75rem 0' }}>発注リストを出力しました</h3>
+            <p style={{ margin: '0 0 2rem 0', color: 'var(--text-secondary)' }}>
+              {lastExportedOrderItems.length}件の部材を発注済みにしますか？
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button className="btn btn-secondary" onClick={() => setShowOrderSuccessModal(false)} style={{ flex: 1 }}>
+                キャンセル
+              </button>
+              <button className="btn btn-primary" onClick={handleMarkAsOrdered} style={{ flex: 1 }}>
+                はい、発注済みにする
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {exportError && (
