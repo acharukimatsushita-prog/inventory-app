@@ -166,6 +166,10 @@ export function useInventory(gasUrl) {
   const [syncStatus, setSyncStatus] = useState({ state: 'idle', message: '待機中' });
   const [dataQuality, setDataQuality] = useState({ total: 0, repaired: 0, missingIds: 0 });
   const fetchItemsRef = useRef(null);
+  const itemsRef = useRef([]);
+
+  // itemsRef を常に最新の items に同期
+  useEffect(() => { itemsRef.current = items; }, [items]);
 
   // GASへのデータ送信（バックグラウンド処理）
   const syncToGas = useCallback(async (action, payload, options = {}) => {
@@ -297,16 +301,13 @@ export function useInventory(gasUrl) {
   const batchUpdateItems = async (updatesArray) => {
     setBatchProgress({ isRunning: true, current: 0, total: updatesArray.length });
     setSyncStatus({ state: 'saving', message: '一括保存中...' });
-    
+
     for (let i = 0; i < updatesArray.length; i++) {
       const update = updatesArray[i]; // { id, ...newFields }
-      
-      let currentItem;
-      setItems(prev => {
-        currentItem = prev.find(it => it.id === update.id);
-        return prev;
-      });
-      
+
+      // setItems の updater 経由ではなく ref から直接読み取る（React 18 の非同期バッチ問題を回避）
+      const currentItem = itemsRef.current.find(it => it.id === update.id);
+
       if (!currentItem) continue;
       
       const updatedItem = normalizeItem({ ...currentItem, ...update, updatedAt: new Date().toISOString() }, i).item;
