@@ -20,7 +20,6 @@ const ITEM_DEFAULTS = {
   isOrdered: false,
   orderedBy: '',
   orderedAt: '',
-  deliveryDate: '',
   createdAt: '',
   updatedAt: ''
 };
@@ -104,7 +103,6 @@ const normalizeItem = (rawItem, index) => {
       isOrdered: toBoolean(source.isOrdered),
       orderedBy: String(source.orderedBy || '').trim(),
       orderedAt: String(source.orderedAt || '').trim(),
-      deliveryDate: String(source.deliveryDate || '').trim(),
       createdAt: String(source.createdAt || now).trim(),
       updatedAt: String(source.updatedAt || '').trim(),
       _rowIndex: source._rowIndex || source.rowIndex || index + 2,

@@ -1523,7 +1523,6 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
     projectNumber: initialData?.projectNumber || '',
     projectName: initialData?.projectName || '',
     remarks: initialData?.remarks || '',
-    deliveryDate: initialData?.deliveryDate || '',
     modelCode: initialData?.modelCode || '',
     quantity: isDuplicate ? 0 : (initialData?.quantity ?? 0),
     unitPrice: initialData?.unitPrice ?? 0,
@@ -1684,13 +1683,9 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
                 {(inputOptions?.modelCodes || []).map(value => <option key={value} value={value} />)}
               </datalist>
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">備考</label>
               <input type="text" className="form-control" value={formData.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="備考があれば入力" />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">納期</label>
-              <input type="text" className="form-control" value={formData.deliveryDate} onChange={e => handleChange('deliveryDate', e.target.value)} placeholder="例：2週間、2026/07/01" />
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>

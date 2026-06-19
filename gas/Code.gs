@@ -21,7 +21,6 @@ const FIELDS = [
   'isOrdered',
   'orderedBy',
   'orderedAt',
-  'deliveryDate',
   'createdAt',
   'updatedAt'
 ];
@@ -31,7 +30,7 @@ const DEFAULTS = {
   size:'',length:'',unit:'個',supplier:'',maker:'',
   projectNumber:'',projectName:'',remarks:'',modelCode:'',
   quantity:0,unitPrice:0,minLot:0,orderQuantity:1,
-  isOrdered:false,orderedBy:'',orderedAt:'',deliveryDate:'',createdAt:'',updatedAt:''
+  isOrdered:false,orderedBy:'',orderedAt:'',createdAt:'',updatedAt:''
 };
 
 function doGet(e) {
@@ -374,7 +373,6 @@ function normalizeItem_(source) {
     isOrdered: toBoolean_(item.isOrdered),
     orderedBy: String(item.orderedBy||'').trim(),
     orderedAt: String(item.orderedAt||'').trim(),
-    deliveryDate: String(item.deliveryDate||'').trim(),
     createdAt: String(item.createdAt||now).trim(),
     updatedAt: String(item.updatedAt||'').trim(),
     _rowIndex: item._rowIndex || item.rowIndex || ''
@@ -505,8 +503,7 @@ function createOrderListExcel_(items) {
       ws.getRange(row, 5).setValue(name           || '');             // E: 名称
       ws.getRange(row, 6).setValue(item.modelCode || '');             // F: 型式
       ws.getRange(row, 8).setValue(Number(item.orderQuantity) || 1);  // H: 数量
-      ws.getRange(row, 9).setValue(item.remarks      || '');          // I: 備考
-      ws.getRange(row, 12).setValue(item.deliveryDate || '');         // L: 納期
+      ws.getRange(row, 9).setValue(item.remarks   || '');             // I: 備考
     });
 
     SpreadsheetApp.flush();
