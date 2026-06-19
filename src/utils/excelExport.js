@@ -91,6 +91,7 @@ export const exportOrderList = async (itemsToOrder, requesterName = '') => {
       sheet.getCell(`F${currentRow}`).value = item.modelCode || '';       // 型式
       sheet.getCell(`H${currentRow}`).value = item.orderQuantity || 1;    // 数量
       sheet.getCell(`I${currentRow}`).value = item.remarks || '';         // 備考
+      sheet.getCell(`L${currentRow}`).value = item.deliveryDate || '';    // 納期
       
       // K列(追加工), L列(納期), M列(非該当証明) は手入力のため空欄のままにしておく
       
