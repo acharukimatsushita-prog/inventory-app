@@ -378,32 +378,29 @@ function App() {
     if (requester.trim()) localStorage.setItem('last_requester', requester);
     try {
       await exportOrderList(targetItems, requester);
-      setLastExportedOrderItems(targetItems.map(item => ({ ...item })));
+      const previousItems = targetItems.map(item => ({ ...item }));
+      setLastExportedOrderItems(previousItems);
       setIsOrderPreviewOpen(false);
-      setShowOrderSuccessModal(true);
+
+      // 出力と同時に自動で発注済みにする
+      const updates = targetItems.map(item => ({
+        id: item.id,
+        isOrdered: true,
+        orderedBy: requester,
+        orderedAt: new Date().toISOString()
+      }));
+      await batchUpdateItems(updates);
+      pushToast(`発注リストを出力し、${updates.length}件を発注済みにしました`, {
+        type: 'success',
+        actionLabel: '元に戻す',
+        onAction: () => {
+          previousItems.forEach(item => updateItem(item.id, item));
+          pushToast('発注済みの変更を戻しました', { type: 'info' });
+        }
+      });
     } catch (e) {
       setExportError('エクセル出力エラー: ' + e.message);
     }
-  };
-
-  const handleMarkAsOrdered = async () => {
-    const previousItems = lastExportedOrderItems.map(item => ({ ...item }));
-    const updates = lastExportedOrderItems.map(item => ({
-      id: item.id,
-      isOrdered: true,
-      orderedBy: exportRequester,
-      orderedAt: new Date().toISOString()
-    }));
-    await batchUpdateItems(updates);
-    setShowOrderSuccessModal(false);
-    pushToast(`${updates.length}件を発注済みにしました`, {
-      type: 'success',
-      actionLabel: '元に戻す',
-      onAction: () => {
-        previousItems.forEach(item => updateItem(item.id, item));
-        pushToast('発注済みの変更を戻しました', { type: 'info' });
-      }
-    });
   };
 
   const toggleOrderSelection = (id) => {
@@ -900,28 +897,6 @@ function App() {
         />
       )}
 
-      {canUseOrderUi && showOrderSuccessModal && (
-        <div className="modal-overlay" style={{ zIndex: 2000 }}>
-          <div className="modal-content glass-panel" style={{ maxWidth: '450px', padding: '2rem', textAlign: 'center' }}>
-            <div style={{ background: 'var(--success-color)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-              <Download size={30} color="white" />
-            </div>
-            <h2 style={{ marginTop: 0 }}>出力完了！</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-              発注リスト（エクセル）を出力しました。<br />
-              対象の部材を<strong>「発注済み」</strong>としてマークしますか？
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button className="btn btn-primary" onClick={handleMarkAsOrdered} style={{ padding: '1rem' }}>
-                はい、発注済みにする
-              </button>
-              <button className="btn btn-secondary" onClick={() => setShowOrderSuccessModal(false)}>
-                いいえ、何もしない
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {qrPrintItem && (
         <QrPrintModal
