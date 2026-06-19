@@ -1523,6 +1523,7 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
     projectNumber: initialData?.projectNumber || '',
     projectName: initialData?.projectName || '',
     remarks: initialData?.remarks || '',
+    leadDays: initialData?.leadDays ?? 0,
     modelCode: initialData?.modelCode || '',
     quantity: isDuplicate ? 0 : (initialData?.quantity ?? 0),
     unitPrice: initialData?.unitPrice ?? 0,
@@ -1683,9 +1684,13 @@ function ItemModal({ onClose, onSave, initialData, categoryTree, inputOptions, i
                 {(inputOptions?.modelCodes || []).map(value => <option key={value} value={value} />)}
               </datalist>
             </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
+            <div className="form-group">
               <label className="form-label">備考</label>
               <input type="text" className="form-control" value={formData.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="備考があれば入力" />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">納期（営業日数）</label>
+              <input type="number" className="form-control" min="0" value={formData.leadDays || ''} onChange={e => handleChange('leadDays', Number(e.target.value) || 0)} placeholder="例: 10（土日を除く10営業日後）" />
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>

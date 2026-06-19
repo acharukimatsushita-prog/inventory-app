@@ -2,6 +2,18 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 
+const addBusinessDays = (days) => {
+  if (!days || days <= 0) return '';
+  const date = new Date();
+  let added = 0;
+  while (added < days) {
+    date.setDate(date.getDate() + 1);
+    const dow = date.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+};
+
 export const exportOrderList = async (itemsToOrder, requesterName = '') => {
   if (!itemsToOrder || itemsToOrder.length === 0) {
     alert('発注が必要な部材がありません。');
@@ -89,8 +101,9 @@ export const exportOrderList = async (itemsToOrder, requesterName = '') => {
       sheet.getCell(`D${currentRow}`).value = item.maker || '';           // メーカー
       sheet.getCell(`E${currentRow}`).value = name;                       // 名称（第3階層）
       sheet.getCell(`F${currentRow}`).value = item.modelCode || '';       // 型式
-      sheet.getCell(`H${currentRow}`).value = item.orderQuantity || 1;    // 数量
-      sheet.getCell(`I${currentRow}`).value = item.remarks || '';         // 備考
+      sheet.getCell(`H${currentRow}`).value = item.orderQuantity || 1;              // 数量
+      sheet.getCell(`I${currentRow}`).value = item.remarks || '';                  // 備考
+      sheet.getCell(`L${currentRow}`).value = addBusinessDays(item.leadDays);      // 納期
       
       // K列(追加工), L列(納期), M列(非該当証明) は手入力のため空欄のままにしておく
       

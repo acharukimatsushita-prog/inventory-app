@@ -21,6 +21,7 @@ const FIELDS = [
   'isOrdered',
   'orderedBy',
   'orderedAt',
+  'leadDays',
   'createdAt',
   'updatedAt'
 ];
@@ -30,7 +31,7 @@ const DEFAULTS = {
   size:'',length:'',unit:'個',supplier:'',maker:'',
   projectNumber:'',projectName:'',remarks:'',modelCode:'',
   quantity:0,unitPrice:0,minLot:0,orderQuantity:1,
-  isOrdered:false,orderedBy:'',orderedAt:'',createdAt:'',updatedAt:''
+  isOrdered:false,orderedBy:'',orderedAt:'',leadDays:0,createdAt:'',updatedAt:''
 };
 
 function doGet(e) {
@@ -373,10 +374,23 @@ function normalizeItem_(source) {
     isOrdered: toBoolean_(item.isOrdered),
     orderedBy: String(item.orderedBy||'').trim(),
     orderedAt: String(item.orderedAt||'').trim(),
+    leadDays: toNumber_(item.leadDays, 0),
     createdAt: String(item.createdAt||now).trim(),
     updatedAt: String(item.updatedAt||'').trim(),
     _rowIndex: item._rowIndex || item.rowIndex || ''
   };
+}
+
+function addBusinessDays_(days) {
+  if (!days || days <= 0) return '';
+  var date = new Date();
+  var added = 0;
+  while (added < days) {
+    date.setDate(date.getDate() + 1);
+    var dow = date.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return (date.getMonth() + 1) + '/' + date.getDate();
 }
 
 function toNumber_(value, fallback) {
@@ -502,8 +516,9 @@ function createOrderListExcel_(items) {
       ws.getRange(row, 4).setValue(item.maker     || '');             // D: メーカー
       ws.getRange(row, 5).setValue(name           || '');             // E: 名称
       ws.getRange(row, 6).setValue(item.modelCode || '');             // F: 型式
-      ws.getRange(row, 8).setValue(Number(item.orderQuantity) || 1);  // H: 数量
-      ws.getRange(row, 9).setValue(item.remarks   || '');             // I: 備考
+      ws.getRange(row, 8).setValue(Number(item.orderQuantity) || 1);   // H: 数量
+      ws.getRange(row, 9).setValue(item.remarks || '');               // I: 備考
+      ws.getRange(row, 12).setValue(addBusinessDays_(item.leadDays)); // L: 納期
     });
 
     SpreadsheetApp.flush();
