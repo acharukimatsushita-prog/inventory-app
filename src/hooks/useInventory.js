@@ -316,7 +316,7 @@ export function useInventory(gasUrl) {
         await fetch(gasUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'update', payload: cleanItemForSync(updatedItem) })
         });
         
